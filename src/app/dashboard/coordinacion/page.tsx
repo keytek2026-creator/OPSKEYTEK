@@ -355,6 +355,26 @@ function CoordinacionContent() {
       if (error) {
         alert(`Error al crear: ${error.message}`);
       } else {
+        // Automatically add to 'nosotros' category
+        try {
+          const payloadNosotros = {
+            atm: formData.atm || "",
+            banco: formData.banco_empresa || "",
+            servicio: formData.tipo_trabajo || "",
+            carlos: 0,
+            scott: 0,
+            ricardo: 0,
+            status: "Pendiente"
+          };
+          const nosotrosId = `rec-${Date.now()}`;
+          await supabase.from("nosotros").upsert({
+            id: nosotrosId,
+            data: payloadNosotros
+          });
+        } catch (e) {
+          console.error("Error creating linked nosotros record:", e);
+        }
+
         setIsModalOpen(false);
         fetchServicios();
         setPage(1); // Volver a primera página para ver el nuevo registro
