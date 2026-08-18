@@ -348,15 +348,17 @@ function CoordinacionContent() {
       }
     } else {
       // Crear nuevo
-      const { error } = await supabase
+      const { data: newRows, error } = await supabase
         .from("servicios")
-        .insert([formData]);
+        .insert([formData])
+        .select();
       
       if (error) {
         alert(`Error al crear: ${error.message}`);
       } else {
-        // Automatically add to 'nosotros' category
+        // Automatically add to 'nosotros' category (cualquier servicio, no solo cerrajería)
         try {
+          const insertedId = newRows && newRows[0] ? newRows[0].id : Date.now();
           const payloadNosotros = {
             atm: formData.atm || "",
             banco: formData.banco_empresa || "",
@@ -366,7 +368,7 @@ function CoordinacionContent() {
             ricardo: 0,
             status: "Pendiente"
           };
-          const nosotrosId = `rec-${Date.now()}`;
+          const nosotrosId = `coord-${insertedId}`;
           await supabase.from("nosotros").upsert({
             id: nosotrosId,
             data: payloadNosotros
@@ -395,6 +397,15 @@ function CoordinacionContent() {
     if (error) {
       alert(`Error al eliminar: ${error.message}`);
     } else {
+      // Eliminar también de la categoría Nosotros
+      try {
+        await supabase
+          .from("nosotros")
+          .delete()
+          .eq("id", `coord-${id}`);
+      } catch (err) {
+        console.error("Error al eliminar de nosotros:", err);
+      }
       fetchServicios();
     }
   };
