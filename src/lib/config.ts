@@ -17,7 +17,7 @@ export const CONFIG = {
   SYSTEM_VERSION: "v2026.1",
   
   // Ruta al logo de la empresa
-  LOGO_PATH: "/logo_sinfondo.png",
+  LOGO_PATH: "/logo.png",
   
   // ¿Usar el logo como imagen física o preferir un logo dinámico con icono CSS?
   // true = usa LOGO_PATH. false = dibuja un logo premium usando CSS + Lucide Icon
