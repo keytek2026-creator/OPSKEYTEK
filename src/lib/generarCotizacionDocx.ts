@@ -249,7 +249,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
         spacing: { before: 80 },
         children: [
           new TextRun({
-            text: 'Contacto@keytek.cl',
+            text: 'Contacto@vaultec.cl',
             size: 20,
             color: 'FFFFFF',
             font: 'Calibri',
@@ -282,7 +282,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
                     transformation: { width: 110, height: 75 },
                   }),
                 ] : [
-                  new TextRun({ text: 'KEYTEK', bold: true, size: 32, color: NAVY, font: 'Calibri' }),
+                  new TextRun({ text: 'VAULTEC', bold: true, size: 32, color: NAVY, font: 'Calibri' }),
                 ],
               }),
             ],

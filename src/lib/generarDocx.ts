@@ -173,7 +173,7 @@ export async function generarDocx(informe: Informe): Promise<Buffer> {
     spacing: { after: 120 },
     children: logoRun
       ? [logoRun]
-      : [new TextRun({ text: 'KEYTEK SpA', bold: true, size: 32, font: 'Calibri', color: '0f766e' })],
+      : [new TextRun({ text: 'VAULTEC SpA', bold: true, size: 32, font: 'Calibri', color: '0f766e' })],
   });
 
   // Título principal subrayado y centrado

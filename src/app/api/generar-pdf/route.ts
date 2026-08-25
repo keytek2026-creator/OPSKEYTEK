@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
     if (informe.logoBase64 && informe.logoBase64.length > 100) {
       logoDataUrl = `data:image/png;base64,${informe.logoBase64}`;
     } else {
-      const logoPath = fs.existsSync(path.join(process.cwd(), 'public', 'logo_keytek.png'))
-        ? path.join(process.cwd(), 'public', 'logo_keytek.png')
-        : path.join(process.cwd(), 'public', 'Imagen1.jpg');
+      const logoPath = fs.existsSync(path.join(process.cwd(), 'public', 'logo_sinfondo.png'))
+        ? path.join(process.cwd(), 'public', 'logo_sinfondo.png')
+        : path.join(process.cwd(), 'public', 'logo.png');
       if (fs.existsSync(logoPath)) {
         const buf = fs.readFileSync(logoPath);
         const mime = logoPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
         // Logo centered
         logoDataUrl
           ? { image: logoDataUrl, width: 160, height: 110, alignment: 'center', margin: [0, 0, 0, 8] }
-          : { text: 'KEYTEK SpA', bold: true, fontSize: 16, color: '#1F497D', alignment: 'center', margin: [0, 0, 0, 8] },
+          : { text: 'VAULTEC SpA', bold: true, fontSize: 16, color: '#1F497D', alignment: 'center', margin: [0, 0, 0, 8] },
         // Title
         {
           text: 'INFORME TÉCNICO DE SERVICIO',

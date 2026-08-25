@@ -231,7 +231,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                   {/* HEADER */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6mm' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/logo_keytek.png" alt="keytek" style={{ width:'40mm', objectFit:'contain' }}/>
+                    <img src="/logo_sinfondo.png" alt="vaultec" style={{ width:'40mm', objectFit:'contain' }}/>
                     <div style={{ textAlign:'right' }}>
                       <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'17pt', color:TITLE_GRAY, lineHeight:1.1 }}>
                         COTIZACI&Oacute;N #{cot.numero || '___'}
@@ -326,7 +326,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
 
                 {/* FOOTER EMAIL */}
                 <div style={{ position:'absolute', bottom:'14mm', left:0, right:0, zIndex:3, textAlign:'center' }}>
-                  <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'9pt', color:'white' }}>contacto@keytek.cl</span>
+                  <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'9pt', color:'white' }}>contacto@vaultec.cl</span>
                 </div>
 
               </div>
