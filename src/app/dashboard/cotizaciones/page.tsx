@@ -1,23 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import {
-  Plus, Trash2, Save, FileText, Printer, Eye, X,
-  Building2, User, Mail, Hash, Calendar, Package,
-  CheckCircle2, ChevronDown, Search, Filter, Download, FileSpreadsheet
+import { 
+  FileText, Download, Printer, Plus, Trash2, Edit2, Search, X, 
+  CheckCircle2, Clock, Mail, AlertCircle, Building2, Calendar, 
+  User, DollarSign, ArrowRight, Eye, Package, Save
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { downloadWord } from "@/lib/generarCotizacionDocx";
+import { supabase } from "@/lib/supabase";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface LineItem {
+// ─── Types ───────────────────────────────────────────────────────────────────
+export interface LineItem {
   id: string;
   descripcion: string;
   cantidad: number;
   valorUnit: number;
 }
 
-interface Cotizacion {
+export interface Cotizacion {
   id: string;
   numero: string;
   fecha: string;
@@ -29,14 +29,14 @@ interface Cotizacion {
   direccion: string;
   items: LineItem[];
   validacion: string;
-  plazoEntrega: string;
+  plazoEntrega?: string;
   nota: string;
-  estado: 'borrador' | 'enviada' | 'aprobada' | 'rechazada';
-  createdAt: string;
+  estado: "borrador" | "enviada" | "aprobada" | "rechazada";
+  createdAt?: string;
 }
 
 const EMPTY_ITEM = (): LineItem => ({
-  id: `item-${Date.now()}-${Math.random()}`,
+  id: String(Date.now() + Math.random()),
   descripcion: "",
   cantidad: 1,
   valorUnit: 0,
@@ -54,7 +54,7 @@ const EMPTY_COT = (): Omit<Cotizacion, 'id' | 'createdAt'> => ({
   items: [EMPTY_ITEM()],
   validacion: "5 días",
   plazoEntrega: "3 días",
-  nota: "",
+  nota: "La cotización es válida por 5 días.",
   estado: 'borrador',
 });
 
@@ -64,39 +64,15 @@ const IVA_RATE = 0.19;
 function calcTotals(items: LineItem[]) {
   const neto = items.reduce((s, i) => s + i.cantidad * i.valorUnit, 0);
   const iva = Math.round(neto * IVA_RATE);
-  return { neto, iva, bruto: neto + iva };
+  const bruto = neto + iva;
+  return { neto, iva, bruto };
 }
 
-function fmtCLP(n: number) {
-  return "$ " + n.toLocaleString("es-CL");
+function fmtCLP(n: number): string {
+  return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 }
 
-const downloadWord = async (cot: Cotizacion) => {
-  try {
-    const response = await fetch('/api/generar-cotizacion-docx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cotizacion: cot }),
-    });
-    if (!response.ok) {
-      throw new Error('Error al generar Word');
-    }
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Cotizacion_${cot.numero || cot.id}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-    alert('Hubo un error al generar el archivo Word');
-  }
-};
-
-const ESTADO_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+const ESTADO_STYLE: Record<Cotizacion["estado"], { bg: string; color: string; label: string }> = {
   borrador:  { bg: "rgba(100,116,139,0.15)", color: "#94a3b8", label: "Borrador" },
   enviada:   { bg: "rgba(245,158,11,0.15)",  color: "#f59e0b", label: "Enviada" },
   aprobada:  { bg: "rgba(114,176,29,0.15)",  color: "#72b01d", label: "Aprobada" },
@@ -122,13 +98,13 @@ function formatLongDate(dateStr: string) {
   return dateStr;
 }
 
-// â”€â”€â”€ Print Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Print Modal ─────────────────────────────────────────────────────────────
 function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
   const { neto, iva, bruto } = calcTotals(cot.items);
   const handleDownloadWord = () => downloadWord(cot);
   const handlePrint = () => window.print();
 
-  // Paleta exacta del diseÃ±o
+  // Paleta exacta del diseño
   const NAVY        = '#1B2A4F';
   const SLATE       = '#5F6E8F';
   const SLATE_LIGHT = '#7C8AAC';
@@ -173,7 +149,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
         }
       `}</style>
 
-      {/* Overlay â€” solo en pantalla */}
+      {/* Overlay — solo en pantalla */}
       <div className="no-print" style={{
         position:'fixed', inset:0, zIndex:9999,
         background:'rgba(0,0,0,0.88)', backdropFilter:'blur(6px)',
@@ -299,6 +275,16 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                     </div>
                   </div>
 
+                  {/* DIRECCIÓN */}
+                  {cot.direccion && (
+                    <div style={{ marginBottom:'2.5mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Direcci&oacute;n: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8pt', color:'#5A5A5A' }}>
+                        {cot.direccion}
+                      </span>
+                    </div>
+                  )}
+
                   {/* NOTA */}
                   <div>
                     <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Nota: </span>
@@ -339,7 +325,14 @@ function CotizacionForm({
   onClose: () => void;
   onSave: (c: Cotizacion) => Promise<void>;
 }) {
-  const [form, setForm] = useState(initial ?? { ...EMPTY_COT(), id: `cot-${Date.now()}`, createdAt: new Date().toISOString() } as Cotizacion);
+  const [form, setForm] = useState<Cotizacion>(() => {
+    if (initial) return initial;
+    return {
+      ...EMPTY_COT(),
+      id: `cot-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    } as Cotizacion;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -356,7 +349,11 @@ function CotizacionForm({
   const handleSave = async () => {
     if (!form.cliente) { setError("El campo Cliente es obligatorio."); return; }
     setSaving(true); setError("");
-    try { await onSave(form); } catch (e: any) { setError(e?.message || "Error al guardar"); setSaving(false); }
+    const finalForm: Cotizacion = {
+      ...form,
+      nota: "La cotización es válida por 5 días."
+    };
+    try { await onSave(finalForm); } catch (e: any) { setError(e?.message || "Error al guardar"); setSaving(false); }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -402,7 +399,7 @@ function CotizacionForm({
             </div>
           </div>
 
-          {/* Cliente */}
+          {/* Cliente y Dirección */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>SEÑOR(ES) / CLIENTE *</label>
@@ -419,6 +416,10 @@ function CotizacionForm({
             <div>
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>EMAIL CONTACTO</label>
               <input style={inputStyle} value={form.emailContacto} onChange={e => set("emailContacto")(e.target.value)} placeholder="email@empresa.cl" />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>DIRECCIÓN / UBICACIÓN</label>
+              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Av. Providencia 1234, Santiago" />
             </div>
           </div>
 
@@ -465,14 +466,14 @@ function CotizacionForm({
             })}
           </div>
 
-          {/* Nota */}
+          {/* Nota (Fija y no modificable) */}
           <div>
-            <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>NOTA</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: 64, resize: "vertical" }}
-              value={form.nota ?? ""}
-              onChange={e => set("nota")(e.target.value)}
-              placeholder="Observaciones, condiciones, plazo de entrega..."
+            <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>NOTA (CONDICIÓN FIJA)</label>
+            <input
+              style={{ ...inputStyle, background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "not-allowed", borderStyle: "dashed" }}
+              value="La cotización es válida por 5 días."
+              readOnly
+              disabled
             />
           </div>
 
@@ -694,17 +695,34 @@ export default function CotizacionesPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-row md:flex-col gap-2 flex-shrink-0">
-                    <button onClick={() => setPreviewing(c)} className="btn-secondary text-xs py-1.5 px-3"><Eye size={12} /> Ver / Imprimir</button>
-                    <button onClick={() => { setEditing(c); setShowForm(true); }} className="btn-secondary text-xs py-1.5 px-3"><FileText size={12} /> Editar</button>
-                    <button onClick={() => handleDownloadWord(c)} className="btn-secondary text-xs py-1.5 px-3" style={{ color: "#72b01d" }}><FileText size={12} /> Word</button>
+                  <div className="flex items-center gap-2 self-end md:self-center">
+                    <button
+                      onClick={() => setPreviewing(c)}
+                      title="Ver e Imprimir"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 13px", background: "rgba(114,176,29,0.1)", border: "1px solid rgba(114,176,29,0.2)", color: "#72b01d", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <Eye size={13} /> Ver PDF
+                    </button>
+                    <button
+                      onClick={() => handleDownloadWord(c)}
+                      title="Descargar Word"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 13px", background: "rgba(43,87,154,0.15)", border: "1px solid rgba(43,87,154,0.3)", color: "#60a5fa", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <FileText size={13} /> Word
+                    </button>
+                    <button
+                      onClick={() => { setEditing(c); setShowForm(true); }}
+                      title="Editar"
+                      style={{ padding: "7px 10px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8", borderRadius: 8, cursor: "pointer" }}
+                    >
+                      <Edit2 size={13} />
+                    </button>
                     <button
                       onClick={() => setConfirmDelete(c)}
-                      className="text-xs py-1.5 px-3"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}
+                      title="Eliminar"
+                      style={{ padding: "7px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "#f87171", borderRadius: 8, cursor: "pointer" }}
                     >
-                      <Trash2 size={12} /> Borrar
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>

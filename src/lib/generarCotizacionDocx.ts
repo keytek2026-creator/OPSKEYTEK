@@ -438,9 +438,22 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
     ],
   });
 
-  // ── NOTA ────────────────────────────────────────────────────────────────────
+  // ── DIRECCIÓN Y NOTA ────────────────────────────────────────────────────────
+  const extraParagraphs: Paragraph[] = [];
+  if (cot.direccion) {
+    extraParagraphs.push(
+      new Paragraph({
+        spacing: { before: 240, after: 60 },
+        children: [
+          new TextRun({ text: 'Dirección: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
+          new TextRun({ text: cot.direccion, size: 20, color: '5A5A5A', font: 'Calibri' }),
+        ],
+      })
+    );
+  }
+
   const notaParagraph = new Paragraph({
-    spacing: { before: 280, after: 120 },
+    spacing: { before: cot.direccion ? 60 : 280, after: 120 },
     children: [
       new TextRun({ text: 'Nota: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
       new TextRun({ text: cot.nota || `La cotización es válida por ${diasVal} días.`, size: 20, color: '5A5A5A', font: 'Calibri' }),
@@ -476,6 +489,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
           itemsTable,
           new Paragraph({ spacing: { after: 160 } }),
           totalsTable,
+          ...extraParagraphs,
           notaParagraph,
         ],
       },
@@ -483,4 +497,27 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
   });
 
   return await Packer.toBuffer(doc);
+}
+
+export async function downloadWord(cot: any) {
+  try {
+    const res = await fetch('/api/generar-cotizacion-docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cotizacion: cot }),
+    });
+    if (!res.ok) throw new Error('Error al generar el documento Word');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cotizacion-${cot.numero || 'nueva'}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Error al descargar documento Word:', e);
+    alert('Error al descargar el archivo de Word.');
+  }
 }
