@@ -123,18 +123,46 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@300;400;500&display=swap');
         @page { size: A4 portrait; margin: 0; }
         @media print {
-          body * { visibility: hidden; }
-          #cotizacion-pdf, #cotizacion-pdf * { visibility: visible; }
-          #cotizacion-pdf {
-            position: fixed !important;
+          html, body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-modal-overlay {
+            position: absolute !important;
             inset: 0 !important;
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          .print-scale-container {
+            transform: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+          }
+          #cotizacion-pdf, #cotizacion-pdf * {
+            visibility: visible !important;
+          }
+          #cotizacion-pdf {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             margin: 0 !important;
             width: 210mm !important;
             height: 297mm !important;
             box-shadow: none !important;
             transform: none !important;
           }
-          .no-print { display: none !important; }
         }
         #cotizacion-pdf {
           position: relative;
@@ -150,7 +178,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
       `}</style>
 
       {/* Overlay — solo en pantalla */}
-      <div className="no-print" style={{
+      <div className="print-modal-overlay" style={{
         position:'fixed', inset:0, zIndex:9999,
         background:'rgba(0,0,0,0.88)', backdropFilter:'blur(6px)',
         display:'flex', alignItems:'flex-start', justifyContent:'center',
@@ -159,7 +187,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
         <div style={{ width:'100%', maxWidth:820 }}>
 
           {/* Toolbar */}
-          <div style={{ display:'flex', justifyContent:'flex-end', gap:10, marginBottom:14 }}>
+          <div className="no-print" style={{ display:'flex', justifyContent:'flex-end', gap:10, marginBottom:14 }}>
             <button onClick={handleDownloadWord} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', background:'#2b579a', color:'white', borderRadius:8, border:'none', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
               <FileText size={14}/> Word
             </button>
@@ -176,7 +204,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
 
           {/* Preview escalado en pantalla */}
           <div style={{ display:'flex', justifyContent:'center' }}>
-            <div style={{ transform:'scale(0.87)', transformOrigin:'top center', boxShadow:'0 16px 60px rgba(0,0,0,0.6)', borderRadius:2, marginBottom:'-13%' }}>
+            <div className="print-scale-container" style={{ transform:'scale(0.87)', transformOrigin:'top center', boxShadow:'0 16px 60px rgba(0,0,0,0.6)', borderRadius:2, marginBottom:'-13%' }}>
 
               {/* DOCUMENTO A4 */}
               <div id="cotizacion-pdf">

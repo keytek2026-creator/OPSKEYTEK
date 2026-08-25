@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { downloadCotizacionWord } from "@/lib/downloadCotizacionWord";
 import {
   Plus, Trash2, Save, FileText, Printer, Eye, X,
   Building2, User, Mail, Hash, Calendar, Package,
@@ -70,30 +71,7 @@ function fmtCLP(n: number) {
   return "$ " + n.toLocaleString("es-CL");
 }
 
-const downloadWord = async (cot: Cotizacion) => {
-  try {
-    const response = await fetch('/api/generar-cotizacion-docx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cotizacion: cot }),
-    });
-    if (!response.ok) {
-      throw new Error('Error al generar Word');
-    }
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Cotizacion_${cot.numero || cot.id}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-    alert('Hubo un error al generar el archivo Word');
-  }
-};
+const downloadWord = (cot: Cotizacion) => downloadCotizacionWord(cot);
 
 const ESTADO_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   borrador:  { bg: "rgba(100,116,139,0.15)", color: "#94a3b8", label: "Borrador" },
@@ -121,217 +99,248 @@ function formatLongDate(dateStr: string) {
   return dateStr;
 }
 
-// ─── Print Modal ──────────────────────────────────────────────────────────────
+// ─── Print Modal ─────────────────────────────────────────────────────────────
 function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
   const { neto, iva, bruto } = calcTotals(cot.items);
-
   const handleDownloadWord = () => downloadWord(cot);
+  const handlePrint = () => window.print();
 
-  const handleDownloadPDF = async () => {
-    const element = document.getElementById("print-area");
-    if (!element) return;
-    const html2pdf = (await import("html2pdf.js")).default;
-    const opt = {
-      margin:      0,
-      filename:    `Cotizacion_${cot.numero || cot.id}.pdf`,
-      image:       { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF:       { unit: 'mm', format: 'letter', orientation: 'portrait' },
-    };
-    html2pdf().from(element).set(opt).save();
-  };
+  // Paleta exacta del diseño
+  const NAVY        = '#1B2A4F';
+  const SLATE       = '#5F6E8F';
+  const SLATE_LIGHT = '#7C8AAC';
+  const ROW_GRAY    = '#DCE0E9';
+  const CLIENT_BLUE = '#2E75B6';
+  const TITLE_GRAY  = '#3F3F3F';
 
-  const BLUE_DARK = '#1D2D44';
-  const BLUE_LIGHT = '#708D81';
-  const BLUE_TEXT = '#1F497D';
-  const TABLE_HEADER_BG = '#4E5E77';
-  const ROW_ALT_BG = '#EBF1F6';
+  const diasVal = cot.validacion?.replace(/[^\d]/g, '') || '5';
+  const TOTAL_ROWS = 6;
+  const fillerCount = Math.max(0, TOTAL_ROWS - cot.items.length);
+  const fmtM = (n: number) => '$' + new Intl.NumberFormat('es-CL').format(n);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      padding: '24px 16px', overflowY: 'auto',
-    }}>
-      <div style={{ width: '100%', maxWidth: 800 }}>
-        {/* Toolbar */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 12 }}>
-          <button onClick={handleDownloadWord} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: '#2b579a', color: 'white', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <FileText size={14} /> Word
-          </button>
-          <button onClick={handleDownloadPDF} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: '#ef4444', color: 'white', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <Download size={14} /> PDF
-          </button>
-          <button onClick={() => window.print()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: 'linear-gradient(135deg,#72b01d,#578814)', color: 'white', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <Printer size={14} /> Imprimir
-          </button>
-          <button onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: 'rgba(255,255,255,0.08)', color: '#94a3b8', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            <X size={14} /> Cerrar
-          </button>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@300;400;500&display=swap');
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+          html, body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-modal-overlay {
+            position: absolute !important;
+            inset: 0 !important;
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          .print-scale-container {
+            transform: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+          }
+          #cotizacion-pdf, #cotizacion-pdf * {
+            visibility: visible !important;
+          }
+          #cotizacion-pdf {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            box-shadow: none !important;
+            transform: none !important;
+          }
+        }
+        #cotizacion-pdf {
+          position: relative;
+          width: 210mm;
+          height: 297mm;
+          overflow: hidden;
+          background: #fff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          font-family: 'Poppins', sans-serif;
+          box-sizing: border-box;
+        }
+      `}</style>
 
-        {/* Document Container */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div id="print-area" style={{
-            position: 'relative',
-            background: 'white',
-            color: '#1e293b',
-            width: '794px',
-            minHeight: '1045px',
-            padding: '130px 60px 140px 60px',
-            fontFamily: 'Arial, sans-serif',
-            fontSize: 12,
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-          }}>
+      {/* Overlay — solo en pantalla */}
+      <div className="print-modal-overlay" style={{
+        position:'fixed', inset:0, zIndex:9999,
+        background:'rgba(0,0,0,0.88)', backdropFilter:'blur(6px)',
+        display:'flex', alignItems:'flex-start', justifyContent:'center',
+        padding:'20px 16px', overflowY:'auto',
+      }}>
+        <div style={{ width:'100%', maxWidth:820 }}>
 
-            {/* Top wave Image */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 180, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/top_wave.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
-            </div>
+          {/* Toolbar */}
+          <div className="no-print" style={{ display:'flex', justifyContent:'flex-end', gap:10, marginBottom:14 }}>
+            <button onClick={handleDownloadWord} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', background:'#2b579a', color:'white', borderRadius:8, border:'none', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              <FileText size={14}/> Word
+            </button>
+            <button onClick={handlePrint} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', background:'#dc2626', color:'white', borderRadius:8, border:'none', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              <Download size={14}/> PDF
+            </button>
+            <button onClick={handlePrint} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', background:'linear-gradient(135deg,#72b01d,#578814)', color:'white', borderRadius:8, border:'none', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              <Printer size={14}/> Imprimir
+            </button>
+            <button onClick={onClose} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', background:'rgba(255,255,255,0.08)', color:'#94a3b8', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+              <X size={14}/> Cerrar
+            </button>
+          </div>
 
-            {/* Main content wrapper */}
-            <div style={{ zIndex: 2, position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              
-              {/* Header: Logo and Title */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo_keytek.png" alt="Keytek" style={{ height: 100, objectFit: 'contain' }} />
-                
-                <div style={{ textAlign: 'right', marginTop: 15 }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: BLUE_TEXT, letterSpacing: 1 }}>
-                    COTIZACIÓN #{cot.numero || '___'}
-                  </div>
-                  <div style={{ fontSize: 13, color: '#64748B', marginTop: 4, fontWeight: 600 }}>
-                    {formatLongDate(cot.fecha)}
-                  </div>
-                </div>
-              </div>
+          {/* Preview escalado en pantalla */}
+          <div style={{ display:'flex', justifyContent:'center' }}>
+            <div className="print-scale-container" style={{ transform:'scale(0.87)', transformOrigin:'top center', boxShadow:'0 16px 60px rgba(0,0,0,0.6)', borderRadius:2, marginBottom:'-13%' }}>
 
-              {/* CLIENTE Info */}
-              <div style={{ marginBottom: 28 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', letterSpacing: 1, marginBottom: 6 }}>
-                  CLIENTE
-                </div>
-                {cot.atencion ? (
-                  <>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#3182CE', marginBottom: 2 }}>
-                      Nombre: {cot.atencion}
+              {/* DOCUMENTO A4 */}
+              <div id="cotizacion-pdf">
+
+                {/* OLA SUPERIOR */}
+                <svg viewBox="0 0 210 297" preserveAspectRatio="none"
+                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}>
+                  <path d="M0,0 L210,0 L210,18 C160,35 120,5 60,30 C30,42 10,50 0,60 Z" fill="#C6D0E0"/>
+                  <path d="M0,0 L95,0 C70,25 60,45 30,62 C15,70 5,72 0,73 Z" fill={SLATE_LIGHT}/>
+                  <path d="M0,0 L72,0 C55,22 42,40 20,55 C12,60 5,62 0,63 Z" fill={NAVY}/>
+                </svg>
+
+                {/* OLA INFERIOR */}
+                <svg viewBox="0 0 210 297" preserveAspectRatio="none"
+                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}>
+                  <path d="M210,297 L210,215 C170,240 120,255 70,268 C40,276 15,285 0,297 Z" fill={SLATE_LIGHT}/>
+                  <path d="M210,297 L210,240 C165,258 115,270 65,280 C35,286 12,291 0,297 Z" fill={NAVY}/>
+                </svg>
+
+                {/* CONTENIDO */}
+                <div style={{ position:'relative', zIndex:2, width:'100%', height:'100%', padding:'75mm 22mm 54mm 22mm', boxSizing:'border-box', display:'flex', flexDirection:'column' }}>
+
+                  {/* HEADER */}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:'7mm' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo_keytek.png" alt="keytek" style={{ width:'42mm', objectFit:'contain', objectPosition:'left bottom' }}/>
+                    <div style={{ textAlign:'right' }}>
+                      <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'18pt', color:TITLE_GRAY, lineHeight:1.1 }}>
+                        COTIZACI&Oacute;N #{cot.numero || '___'}
+                      </div>
+                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'11pt', color:TITLE_GRAY, marginTop:'1.5mm' }}>
+                        {formatLongDate(cot.fecha)}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#3182CE' }}>
-                      Empresa: {cot.cliente}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#3182CE' }}>
-                    Cliente: {cot.cliente}
                   </div>
-                )}
-              </div>
 
-              {/* Descripción del servicio (Optional) */}
-              {cot.descripcionServicio && (
-                <div style={{ marginBottom: 24, padding: '12px 16px', background: '#F8FAFC', borderLeft: `3px solid ${BLUE_TEXT}`, borderRadius: 4 }}>
-                  <strong style={{ color: BLUE_TEXT, fontSize: 11, letterSpacing: 0.5 }}>DESCRIPCIÓN DEL SERVICIO:</strong><br />
-                  <span style={{ whiteSpace: 'pre-wrap', fontSize: 12, display: 'block', marginTop: 4 }}>{cot.descripcionServicio}</span>
-                </div>
-              )}
+                  {/* CLIENTE */}
+                  <div style={{ marginBottom:'7mm' }}>
+                    <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:TITLE_GRAY, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:'2mm' }}>
+                      Cliente
+                    </div>
+                    {cot.atencion ? (
+                      <>
+                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>Nombre: {cot.atencion}</div>
+                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>Empresa: {cot.cliente}</div>
+                      </>
+                    ) : (
+                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>{cot.cliente}</div>
+                    )}
+                  </div>
 
-              {/* Items Table */}
-              <div style={{ flex: 1 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: TABLE_HEADER_BG, color: 'white' }}>
-                      <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, borderTopLeftRadius: 4, borderBottomLeftRadius: 4 }}>Descripción</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'center', fontSize: 11, fontWeight: 700, width: 80 }}>Cantidad</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, width: 120 }}>Precio</th>
-                      <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, width: 120, borderTopRightRadius: 4, borderBottomRightRadius: 4 }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cot.items.map((item, i) => (
-                      <tr key={item.id} style={{ background: i % 2 === 1 ? ROW_ALT_BG : 'white' }}>
-                        <td style={{ padding: '10px 12px', borderBottom: '1px solid #E2E8F0', color: '#334155' }}>{item.descripcion}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', borderBottom: '1px solid #E2E8F0', color: '#334155' }}>{item.cantidad}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: '1px solid #E2E8F0', color: '#334155' }}>{fmtCLP(item.valorUnit)}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: '1px solid #E2E8F0', fontWeight: 600, color: '#334155' }}>{fmtCLP(item.cantidad * item.valorUnit)}</td>
+                  {/* TABLA */}
+                  <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:'5mm', tableLayout:'fixed' }}>
+                    <thead>
+                      <tr style={{ background:SLATE }}>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'left',   padding:'3mm 3mm 3mm 3.5mm', width:'45%' }}>Descripci&oacute;n</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'center', padding:'3mm', width:'18%' }}>Cantidad</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'3mm', width:'18%' }}>Precio</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'3mm 3.5mm 3mm 3mm', width:'19%' }}>Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Totals Section */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-                  <table style={{ borderCollapse: 'collapse', minWidth: 240 }}>
+                    </thead>
                     <tbody>
-                      <tr>
-                        <td style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, color: '#475569', textAlign: 'left' }}>TOTAL</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#334155' }}>{fmtCLP(neto)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '6px 12px', fontSize: 11, fontWeight: 800, color: '#475569', textAlign: 'left' }}>IVA (19%)</td>
-                        <td style={{ padding: '6px 12px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#334155' }}>{fmtCLP(iva)}</td>
-                      </tr>
-                      <tr style={{ background: TABLE_HEADER_BG, color: 'white' }}>
-                        <td style={{ padding: '8px 12px', fontSize: 12, fontWeight: 800, borderTopLeftRadius: 4, borderBottomLeftRadius: 4 }}>TOTAL:</td>
-                        <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: 13, fontWeight: 800, borderTopRightRadius: 4, borderBottomRightRadius: 4 }}>{fmtCLP(bruto)}</td>
-                      </tr>
+                      {cot.items.map((item) => (
+                        <tr key={item.id} style={{ background:'white', height:'9mm' }}>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', padding:'0 3mm 0 3.5mm' }}>{item.descripcion}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'center', padding:'0 3mm' }}>{item.cantidad}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'right',  padding:'0 3mm' }}>{fmtM(item.valorUnit)}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'right',  padding:'0 3.5mm 0 3mm' }}>{fmtM(item.cantidad * item.valorUnit)}</td>
+                        </tr>
+                      ))}
+                      {Array.from({ length: fillerCount }).map((_, i) => (
+                        <tr key={`f-${i}`} style={{ background: i % 2 === 0 ? ROW_GRAY : 'white', height:'9mm' }}>
+                          <td style={{ padding:'0 3mm 0 3.5mm' }}>&nbsp;</td>
+                          <td>&nbsp;</td><td>&nbsp;</td>
+                          <td style={{ padding:'0 3.5mm 0 3mm' }}>&nbsp;</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
 
-              {/* Dirección y Nota */}
-              <div style={{ marginTop: 20, fontSize: 11, color: '#334155', lineHeight: 1.5 }}>
-                {cot.direccion && (
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 800, color: BLUE_TEXT }}>Dirección:</span> {cot.direccion}
+                  {/* TOTALES */}
+                  <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'5mm' }}>
+                    <div style={{ width:'48%' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.5mm 0', borderBottom:`1px solid ${ROW_GRAY}` }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:NAVY }}>SUBTOTAL</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:TITLE_GRAY }}>{fmtM(neto)}</span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.5mm 0', marginBottom:'2mm', borderBottom:`1px solid ${ROW_GRAY}` }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:NAVY }}>IVA (19%)</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:TITLE_GRAY }}>{fmtM(iva)}</span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:SLATE, padding:'3.5mm 4mm', borderRadius:'1mm' }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'10.5pt', color:'white' }}>TOTAL:</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'12pt', color:'white' }}>{fmtM(bruto)}</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <div>
-                  <span style={{ fontWeight: 800, color: BLUE_TEXT }}>Nota:</span> {cot.nota || "La cotización es válida por 5 días."}
+
+                  {/* DIRECCIÓN */}
+                  {cot.direccion && (
+                    <div style={{ marginBottom:'2.5mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Direcci&oacute;n: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8pt', color:'#5A5A5A' }}>
+                        {cot.direccion}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* NOTA */}
+                  <div>
+                    <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Nota: </span>
+                    <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8pt', color:'#5A5A5A' }}>
+                      {cot.nota || `La cotizaci\u00f3n es v\u00e1lida por ${diasVal} d\u00edas.`}
+                    </span>
+                  </div>
+
                 </div>
+
+                {/* FOOTER EMAIL */}
+                <div style={{ position:'absolute', bottom:'16mm', left:0, right:0, zIndex:3, display:'flex', alignItems:'center', justifyContent:'center', gap:'3mm' }}>
+                  <div style={{ width:'14mm', height:'14mm', borderRadius:'50%', background:'white', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NAVY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </div>
+                  <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'9pt', color:'white' }}>contacto@keytek.cl</span>
+                </div>
+
               </div>
-
             </div>
-
-            {/* Bottom wave Image */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/bottom_wave.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
-            </div>
-
-            {/* Bottom Email Contact centered */}
-            <div style={{
-              position: 'absolute',
-              bottom: 24,
-              left: 0,
-              right: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: 'white',
-              fontSize: 12,
-              fontWeight: 600,
-              zIndex: 2
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-              contacto@keytek.cl
-            </div>
-
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
