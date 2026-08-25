@@ -6,7 +6,7 @@ import {
   CheckCircle2, Clock, Mail, AlertCircle, Building2, Calendar, 
   User, DollarSign, ArrowRight, Eye, Package, Save
 } from "lucide-react";
-import { downloadWord } from "@/lib/generarCotizacionDocx";
+import { downloadCotizacionWord as downloadWord } from "@/lib/downloadCotizacionWord";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
