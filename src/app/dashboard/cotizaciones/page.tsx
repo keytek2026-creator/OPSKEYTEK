@@ -107,13 +107,12 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
   // Paleta exacta del diseño
   const NAVY        = '#1B2A4F';
   const SLATE       = '#5F6E8F';
-  const SLATE_LIGHT = '#7C8AAC';
-  const ROW_GRAY    = '#DCE0E9';
+  const ROW_GRAY    = '#E2E8F0';
   const CLIENT_BLUE = '#2E75B6';
   const TITLE_GRAY  = '#3F3F3F';
 
   const diasVal = cot.validacion?.replace(/[^\d]/g, '') || '5';
-  const TOTAL_ROWS = 6;
+  const TOTAL_ROWS = 4;
   const fillerCount = Math.max(0, TOTAL_ROWS - cot.items.length);
   const fmtM = (n: number) => '$' + new Intl.NumberFormat('es-CL').format(n);
 
@@ -209,74 +208,75 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
               {/* DOCUMENTO A4 */}
               <div id="cotizacion-pdf">
 
-                {/* OLA SUPERIOR */}
-                <svg viewBox="0 0 210 297" preserveAspectRatio="none"
-                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}>
-                  <path d="M0,0 L210,0 L210,18 C160,35 120,5 60,30 C30,42 10,50 0,60 Z" fill="#C6D0E0"/>
-                  <path d="M0,0 L95,0 C70,25 60,45 30,62 C15,70 5,72 0,73 Z" fill={SLATE_LIGHT}/>
-                  <path d="M0,0 L72,0 C55,22 42,40 20,55 C12,60 5,62 0,63 Z" fill={NAVY}/>
-                </svg>
+                {/* OLA SUPERIOR (Imagen idéntica a Word) */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/top_wave.png"
+                  alt=""
+                  style={{ position:'absolute', top:0, left:0, width:'100%', height:'52mm', objectFit:'fill', pointerEvents:'none', zIndex:1 }}
+                />
 
-                {/* OLA INFERIOR */}
-                <svg viewBox="0 0 210 297" preserveAspectRatio="none"
-                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}>
-                  <path d="M210,297 L210,215 C170,240 120,255 70,268 C40,276 15,285 0,297 Z" fill={SLATE_LIGHT}/>
-                  <path d="M210,297 L210,240 C165,258 115,270 65,280 C35,286 12,291 0,297 Z" fill={NAVY}/>
-                </svg>
+                {/* OLA INFERIOR (Imagen idéntica a Word) */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/bottom_wave.png"
+                  alt=""
+                  style={{ position:'absolute', bottom:0, left:0, width:'100%', height:'58mm', objectFit:'fill', pointerEvents:'none', zIndex:1 }}
+                />
 
                 {/* CONTENIDO */}
-                <div style={{ position:'relative', zIndex:2, width:'100%', height:'100%', padding:'75mm 22mm 54mm 22mm', boxSizing:'border-box', display:'flex', flexDirection:'column' }}>
+                <div style={{ position:'relative', zIndex:2, width:'100%', height:'100%', padding:'52mm 22mm 46mm 22mm', boxSizing:'border-box', display:'flex', flexDirection:'column' }}>
 
                   {/* HEADER */}
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:'7mm' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6mm' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/logo_keytek.png" alt="keytek" style={{ width:'42mm', objectFit:'contain', objectPosition:'left bottom' }}/>
+                    <img src="/logo_keytek.png" alt="keytek" style={{ width:'40mm', objectFit:'contain' }}/>
                     <div style={{ textAlign:'right' }}>
-                      <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'18pt', color:TITLE_GRAY, lineHeight:1.1 }}>
+                      <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'17pt', color:TITLE_GRAY, lineHeight:1.1 }}>
                         COTIZACI&Oacute;N #{cot.numero || '___'}
                       </div>
-                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'11pt', color:TITLE_GRAY, marginTop:'1.5mm' }}>
+                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'10.5pt', color:TITLE_GRAY, marginTop:'1.5mm' }}>
                         {formatLongDate(cot.fecha)}
                       </div>
                     </div>
                   </div>
 
                   {/* CLIENTE */}
-                  <div style={{ marginBottom:'7mm' }}>
-                    <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:TITLE_GRAY, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:'2mm' }}>
+                  <div style={{ marginBottom:'5mm' }}>
+                    <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:TITLE_GRAY, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom:'1.5mm' }}>
                       Cliente
                     </div>
                     {cot.atencion ? (
                       <>
-                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>Nombre: {cot.atencion}</div>
-                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>Empresa: {cot.cliente}</div>
+                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.6 }}>Nombre: {cot.atencion}</div>
+                        <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.6 }}>Empresa: {cot.cliente}</div>
                       </>
                     ) : (
-                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.7 }}>{cot.cliente}</div>
+                      <div style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'9pt', color:CLIENT_BLUE, lineHeight:1.6 }}>{cot.cliente}</div>
                     )}
                   </div>
 
                   {/* TABLA */}
-                  <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:'5mm', tableLayout:'fixed' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:'4mm', tableLayout:'fixed' }}>
                     <thead>
                       <tr style={{ background:SLATE }}>
-                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'left',   padding:'3mm 3mm 3mm 3.5mm', width:'45%' }}>Descripci&oacute;n</th>
-                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'center', padding:'3mm', width:'18%' }}>Cantidad</th>
-                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'3mm', width:'18%' }}>Precio</th>
-                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'3mm 3.5mm 3mm 3mm', width:'19%' }}>Total</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'8.5pt', color:'white', textAlign:'left',   padding:'2.5mm 3mm 2.5mm 3.5mm', width:'45%' }}>Descripci&oacute;n</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'8.5pt', color:'white', textAlign:'center', padding:'2.5mm', width:'18%' }}>Cantidad</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'2.5mm', width:'18%' }}>Precio</th>
+                        <th style={{ fontFamily:"'Poppins',sans-serif", fontWeight:500, fontSize:'8.5pt', color:'white', textAlign:'right',  padding:'2.5mm 3.5mm 2.5mm 3mm', width:'19%' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {cot.items.map((item) => (
-                        <tr key={item.id} style={{ background:'white', height:'9mm' }}>
-                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', padding:'0 3mm 0 3.5mm' }}>{item.descripcion}</td>
-                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'center', padding:'0 3mm' }}>{item.cantidad}</td>
-                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'right',  padding:'0 3mm' }}>{fmtM(item.valorUnit)}</td>
-                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A', textAlign:'right',  padding:'0 3.5mm 0 3mm' }}>{fmtM(item.cantidad * item.valorUnit)}</td>
+                        <tr key={item.id} style={{ background:'white', height:'8mm' }}>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#333', padding:'0 3mm 0 3.5mm' }}>{item.descripcion}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#333', textAlign:'center', padding:'0 3mm' }}>{item.cantidad}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#333', textAlign:'right',  padding:'0 3mm' }}>{fmtM(item.valorUnit)}</td>
+                          <td style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#333', textAlign:'right',  padding:'0 3.5mm 0 3mm' }}>{fmtM(item.cantidad * item.valorUnit)}</td>
                         </tr>
                       ))}
                       {Array.from({ length: fillerCount }).map((_, i) => (
-                        <tr key={`f-${i}`} style={{ background: i % 2 === 0 ? ROW_GRAY : 'white', height:'9mm' }}>
+                        <tr key={`f-${i}`} style={{ background: i % 2 === 0 ? ROW_GRAY : 'white', height:'8mm' }}>
                           <td style={{ padding:'0 3mm 0 3.5mm' }}>&nbsp;</td>
                           <td>&nbsp;</td><td>&nbsp;</td>
                           <td style={{ padding:'0 3.5mm 0 3mm' }}>&nbsp;</td>
@@ -286,28 +286,28 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                   </table>
 
                   {/* TOTALES */}
-                  <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'5mm' }}>
+                  <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'4mm' }}>
                     <div style={{ width:'48%' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.5mm 0', borderBottom:`1px solid ${ROW_GRAY}` }}>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:NAVY }}>SUBTOTAL</span>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:TITLE_GRAY }}>{fmtM(neto)}</span>
+                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.2mm 0', borderBottom:`1px solid ${ROW_GRAY}` }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>SUBTOTAL</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:TITLE_GRAY }}>{fmtM(neto)}</span>
                       </div>
-                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.5mm 0', marginBottom:'2mm', borderBottom:`1px solid ${ROW_GRAY}` }}>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:NAVY }}>IVA (19%)</span>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'9pt', color:TITLE_GRAY }}>{fmtM(iva)}</span>
+                      <div style={{ display:'flex', justifyContent:'space-between', padding:'1.2mm 0', marginBottom:'1.5mm', borderBottom:`1px solid ${ROW_GRAY}` }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>IVA (19%)</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:TITLE_GRAY }}>{fmtM(iva)}</span>
                       </div>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:SLATE, padding:'3.5mm 4mm', borderRadius:'1mm' }}>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'10.5pt', color:'white' }}>TOTAL:</span>
-                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'12pt', color:'white' }}>{fmtM(bruto)}</span>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:SLATE, padding:'3mm 4mm', borderRadius:'1mm' }}>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'10pt', color:'white' }}>TOTAL:</span>
+                        <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'11.5pt', color:'white' }}>{fmtM(bruto)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* DIRECCIÓN */}
                   {cot.direccion && (
-                    <div style={{ marginBottom:'2.5mm' }}>
-                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Direcci&oacute;n: </span>
-                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8pt', color:'#5A5A5A' }}>
+                    <div style={{ marginBottom:'2mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>Direcci&oacute;n: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A' }}>
                         {cot.direccion}
                       </span>
                     </div>
@@ -315,8 +315,8 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
 
                   {/* NOTA */}
                   <div>
-                    <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8pt', color:NAVY }}>Nota: </span>
-                    <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8pt', color:'#5A5A5A' }}>
+                    <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>Nota: </span>
+                    <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'8.5pt', color:'#5A5A5A' }}>
                       {cot.nota || `La cotizaci\u00f3n es v\u00e1lida por ${diasVal} d\u00edas.`}
                     </span>
                   </div>
@@ -324,13 +324,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                 </div>
 
                 {/* FOOTER EMAIL */}
-                <div style={{ position:'absolute', bottom:'16mm', left:0, right:0, zIndex:3, display:'flex', alignItems:'center', justifyContent:'center', gap:'3mm' }}>
-                  <div style={{ width:'14mm', height:'14mm', borderRadius:'50%', background:'white', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NAVY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                  </div>
+                <div style={{ position:'absolute', bottom:'14mm', left:0, right:0, zIndex:3, textAlign:'center' }}>
                   <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:300, fontSize:'9pt', color:'white' }}>contacto@keytek.cl</span>
                 </div>
 
