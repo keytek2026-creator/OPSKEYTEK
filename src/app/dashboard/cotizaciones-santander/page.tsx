@@ -53,7 +53,7 @@ const EMPTY_COT = (): Omit<Cotizacion, 'id' | 'createdAt'> => ({
   items: [EMPTY_ITEM()],
   validacion: "5 días",
   plazoEntrega: "3 días",
-  nota: '',
+  nota: "La cotización es válida por 5 días.",
   estado: 'borrador',
 });
 
@@ -286,12 +286,17 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                 </div>
               </div>
 
-              {/* Nota */}
-              {cot.nota && (
-                <div style={{ marginTop: 24, fontSize: 11, color: '#334155', lineHeight: 1.4 }}>
-                  <span style={{ fontWeight: 800, color: BLUE_TEXT }}>Nota:</span> {cot.nota}
+              {/* Dirección y Nota */}
+              <div style={{ marginTop: 20, fontSize: 11, color: '#334155', lineHeight: 1.5 }}>
+                {cot.direccion && (
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontWeight: 800, color: BLUE_TEXT }}>Dirección:</span> {cot.direccion}
+                  </div>
+                )}
+                <div>
+                  <span style={{ fontWeight: 800, color: BLUE_TEXT }}>Nota:</span> {cot.nota || "La cotización es válida por 5 días."}
                 </div>
-              )}
+              </div>
 
             </div>
 
@@ -532,7 +537,11 @@ function CotizacionForm({
   const handleSave = async () => {
     if (!form.cliente) { setError("El campo Cliente es obligatorio."); return; }
     setSaving(true); setError("");
-    try { await onSave(form); } catch (e: any) { setError(e?.message || "Error al guardar"); setSaving(false); }
+    const finalForm: Cotizacion = {
+      ...form,
+      nota: "La cotización es válida por 5 días."
+    };
+    try { await onSave(finalForm); } catch (e: any) { setError(e?.message || "Error al guardar"); setSaving(false); }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -578,7 +587,7 @@ function CotizacionForm({
             </div>
           </div>
 
-          {/* Cliente */}
+          {/* Cliente y Dirección */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>SEÑOR(ES) / CLIENTE *</label>
@@ -595,6 +604,10 @@ function CotizacionForm({
             <div>
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>EMAIL CONTACTO</label>
               <input style={inputStyle} value={form.emailContacto} onChange={e => set("emailContacto")(e.target.value)} placeholder="email@empresa.cl" />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>DIRECCIÓN / UBICACIÓN</label>
+              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Av. Providencia 1234, Santiago" />
             </div>
           </div>
 
@@ -648,14 +661,14 @@ function CotizacionForm({
             })}
           </div>
 
-          {/* Nota */}
+          {/* Nota (Fija y no modificable) */}
           <div>
-            <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>NOTA</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: 64, resize: "vertical" }}
-              value={form.nota ?? ""}
-              onChange={e => set("nota")(e.target.value)}
-              placeholder="Observaciones, condiciones, plazo de entrega..."
+            <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>NOTA (CONDICIÓN FIJA)</label>
+            <input
+              style={{ ...inputStyle, background: "rgba(255,255,255,0.02)", color: "#94a3b8", cursor: "not-allowed", borderStyle: "dashed" }}
+              value="La cotización es válida por 5 días."
+              readOnly
+              disabled
             />
           </div>
 
