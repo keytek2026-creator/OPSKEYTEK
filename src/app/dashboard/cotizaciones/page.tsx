@@ -230,7 +230,7 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                   {/* HEADER */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6mm' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/logo_sinfondo.png" alt="vaultec" style={{ width:'40mm', objectFit:'contain' }}/>
+                    <img src="/coti.png" alt="vaultec" style={{ width:'30mm', height:'30mm', objectFit:'contain' }}/>
                     <div style={{ textAlign:'right' }}>
                       <div style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:800, fontSize:'17pt', color:TITLE_GRAY, lineHeight:1.1 }}>
                         COTIZACI&Oacute;N #{cot.numero || '___'}

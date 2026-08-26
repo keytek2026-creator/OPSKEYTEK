@@ -178,8 +178,13 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
   // ── Cargar logo ─────────────────────────────────────────────────────────────
   let logoBuffer: Buffer | null = null;
   try {
-    const clean = logoB64.replace(/^data:image\/\w+;base64,/, '');
-    logoBuffer = Buffer.from(clean, 'base64');
+    const cotiPath = path.join(publicPath, 'coti.png');
+    if (fs.existsSync(cotiPath)) {
+      logoBuffer = fs.readFileSync(cotiPath);
+    } else {
+      const clean = logoB64.replace(/^data:image\/\w+;base64,/, '');
+      logoBuffer = Buffer.from(clean, 'base64');
+    }
   } catch { /* sin logo */ }
 
   // ── HEADER del documento: ola superior ─────────────────────────────────────
@@ -279,7 +284,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
                   new ImageRun({
                     data: logoBuffer,
                     type: 'png',
-                    transformation: { width: 110, height: 75 },
+                    transformation: { width: 85, height: 85 },
                   }),
                 ] : [
                   new TextRun({ text: 'VAULTEC', bold: true, size: 32, color: NAVY, font: 'Calibri' }),
