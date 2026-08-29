@@ -11,6 +11,7 @@ interface NosotrosRecord {
   id: string;
   atm: string;
   banco: string;
+  local?: string;
   servicio: string;
   carlos: number;
   scott: number;
@@ -21,10 +22,10 @@ interface NosotrosRecord {
 
 // Datos semilla basados en el Excel YO.xlsx
 const SEED_DATA: NosotrosRecord[] = [
-  { id: "seed-1", atm: "164", banco: "Banco de Chile", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
-  { id: "seed-2", atm: "269", banco: "Scotiabank", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
-  { id: "seed-3", atm: "243", banco: "Scotiabank", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
-  { id: "seed-4", atm: "1753", banco: "Santander", servicio: "Cerrajería", carlos: 100000, scott: 100000, ricardo: 100000, status: "Completado" }
+  { id: "seed-1", atm: "164", banco: "Banco de Chile", local: "Casa Matriz", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
+  { id: "seed-2", atm: "269", banco: "Scotiabank", local: "Sucursal Providencia", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
+  { id: "seed-3", atm: "243", banco: "Scotiabank", local: "Sucursal Las Condes", servicio: "Cerrajería", carlos: 110000, scott: 110000, ricardo: 100000, status: "Completado" },
+  { id: "seed-4", atm: "1753", banco: "Santander", local: "Sucursal Santiago Centro", servicio: "Cerrajería", carlos: 100000, scott: 100000, ricardo: 100000, status: "Completado" }
 ];
 
 export default function NosotrosPage() {
@@ -39,6 +40,7 @@ export default function NosotrosPage() {
   // Form states
   const [atm, setAtm] = useState("");
   const [banco, setBanco] = useState("");
+  const [local, setLocal] = useState("");
   const [servicio, setServicio] = useState("Cerrajería");
   const [carlos, setCarlos] = useState(0);
   const [scott, setScott] = useState(0);
@@ -49,10 +51,17 @@ export default function NosotrosPage() {
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("nosotros")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const [nosotrosRes, serviciosRes] = await Promise.all([
+        supabase
+          .from("nosotros")
+          .select("*")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("servicios")
+          .select("id, local, atm, banco_empresa")
+      ]);
+
+      const { data, error } = nosotrosRes;
 
       if (error) {
         // Si la tabla no existe en la base de datos (error 42P01)
@@ -64,17 +73,38 @@ export default function NosotrosPage() {
           throw error;
         }
       } else if (data && data.length > 0) {
-        const mapped: NosotrosRecord[] = data.map((r: any) => ({
-          id: r.id,
-          atm: r.data.atm ?? "",
-          banco: r.data.banco ?? "",
-          servicio: r.data.servicio ?? "",
-          carlos: Number(r.data.carlos ?? 0),
-          scott: Number(r.data.scott ?? 0),
-          ricardo: Number(r.data.ricardo ?? 0),
-          status: r.data.status ?? "",
-          createdAt: r.created_at
-        }));
+        // Map de servicios de coordinación para enriquecer el local si no viene en el registro
+        const serviciosList = serviciosRes.data || [];
+        const coordMap = new Map<string, string>();
+        const atmMap = new Map<string, string>();
+
+        serviciosList.forEach((s: any) => {
+          if (s.id && s.local) coordMap.set(`coord-${s.id}`, s.local);
+          if (s.atm && s.local) atmMap.set(String(s.atm).trim().toLowerCase(), s.local);
+        });
+
+        const mapped: NosotrosRecord[] = data.map((r: any) => {
+          let localVal = r.data.local ?? "";
+          if (!localVal) {
+            if (coordMap.has(r.id)) {
+              localVal = coordMap.get(r.id) || "";
+            } else if (r.data.atm && atmMap.has(String(r.data.atm).trim().toLowerCase())) {
+              localVal = atmMap.get(String(r.data.atm).trim().toLowerCase()) || "";
+            }
+          }
+          return {
+            id: r.id,
+            atm: r.data.atm ?? "",
+            banco: r.data.banco ?? "",
+            local: localVal,
+            servicio: r.data.servicio ?? "",
+            carlos: Number(r.data.carlos ?? 0),
+            scott: Number(r.data.scott ?? 0),
+            ricardo: Number(r.data.ricardo ?? 0),
+            status: r.data.status ?? "",
+            createdAt: r.created_at
+          };
+        });
         setRecords(mapped);
         setDbError(null);
       } else {
@@ -86,6 +116,7 @@ export default function NosotrosPage() {
             data: {
               atm: item.atm,
               banco: item.banco,
+              local: item.local,
               servicio: item.servicio,
               carlos: item.carlos,
               scott: item.scott,
@@ -115,6 +146,7 @@ export default function NosotrosPage() {
     setEditingRecord(null);
     setAtm("");
     setBanco("");
+    setLocal("");
     setServicio("Cerrajería");
     setCarlos(0);
     setScott(0);
@@ -127,6 +159,7 @@ export default function NosotrosPage() {
     setEditingRecord(rec);
     setAtm(rec.atm);
     setBanco(rec.banco);
+    setLocal(rec.local || "");
     setServicio(rec.servicio);
     setCarlos(rec.carlos);
     setScott(rec.scott);
@@ -142,6 +175,7 @@ export default function NosotrosPage() {
     const payload: Omit<NosotrosRecord, "id"> = {
       atm,
       banco,
+      local,
       servicio,
       carlos: Number(carlos),
       scott: Number(scott),
@@ -200,6 +234,7 @@ export default function NosotrosPage() {
         data: {
           atm: record.atm,
           banco: record.banco,
+          local: record.local || "",
           servicio: record.servicio,
           carlos: record.carlos,
           scott: record.scott,
@@ -229,6 +264,7 @@ export default function NosotrosPage() {
   const filteredRecords = records.filter(r => 
     r.banco.toLowerCase().includes(search.toLowerCase()) ||
     r.atm.toLowerCase().includes(search.toLowerCase()) ||
+    (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
     r.servicio.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -379,6 +415,7 @@ export default function NosotrosPage() {
                 <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ATM</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Banco</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Local</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Servicio</th>
                   <th className="px-6 py-4 text-right text-xs font-bold text-sky-400 uppercase tracking-wider">Carlos</th>
                   <th className="px-6 py-4 text-right text-xs font-bold text-emerald-400 uppercase tracking-wider">Scott</th>
@@ -391,7 +428,7 @@ export default function NosotrosPage() {
               <tbody>
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500 text-sm">
+                    <td colSpan={10} className="px-6 py-12 text-center text-slate-500 text-sm">
                       No se encontraron registros que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -403,6 +440,7 @@ export default function NosotrosPage() {
                       <tr key={r.id} className="hover:bg-white/[0.01] transition-colors border-b border-slate-800/40">
                         <td className="px-6 py-3.5 text-sm font-semibold text-slate-200">{r.atm}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.banco}</td>
+                        <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.local || "-"}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-400">{r.servicio}</td>
                         <td className={`px-6 py-3.5 text-sm text-right font-mono ${completado ? "text-sky-300" : "text-slate-400"}`}>{fmtCLP(r.carlos)}</td>
                         <td className={`px-6 py-3.5 text-sm text-right font-mono ${completado ? "text-emerald-300" : "text-slate-400"}`}>{fmtCLP(r.scott)}</td>
@@ -451,7 +489,7 @@ export default function NosotrosPage() {
                 {filteredRecords.length > 0 && (
                   <>
                     <tr style={{ background: "rgba(255,255,255,0.03)" }} className="font-bold border-t-2 border-slate-700">
-                      <td colSpan={3} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
+                      <td colSpan={4} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
                         TOTALES (COMPLETADOS)
                       </td>
                       <td className="px-6 py-3 text-sm text-right text-sky-400 font-mono">{fmtCLP(filteredCompletedCarlos)}</td>
@@ -467,7 +505,7 @@ export default function NosotrosPage() {
                     {hasPendingFiltered && (
                       <>
                         <tr style={{ background: "rgba(245,158,11,0.03)" }} className="font-semibold text-xs border-t border-slate-800">
-                          <td colSpan={3} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
+                          <td colSpan={4} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
                             TOTALES (PENDIENTES)
                           </td>
                           <td className="px-6 py-2.5 text-sm text-right text-amber-300/80 font-mono">{fmtCLP(filteredPendingCarlos)}</td>
@@ -480,7 +518,7 @@ export default function NosotrosPage() {
                         </tr>
 
                         <tr style={{ background: "rgba(255,255,255,0.05)" }} className="font-bold border-t border-slate-700">
-                          <td colSpan={3} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
+                          <td colSpan={4} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
                             GRAN TOTAL (TODOS LOS REGISTROS)
                           </td>
                           <td className="px-6 py-3 text-sm text-right text-slate-200 font-mono">{fmtCLP(filteredCompletedCarlos + filteredPendingCarlos)}</td>
@@ -518,7 +556,7 @@ export default function NosotrosPage() {
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {/* ATM */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">ID ATM</label>
@@ -542,6 +580,19 @@ export default function NosotrosPage() {
                     placeholder="Ej: Banco de Chile"
                     value={banco}
                     onChange={(e) => setBanco(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl text-sm border focus:outline-none focus:border-sky-500 transition-colors"
+                    style={{ background: "#121418", borderColor: "rgba(255,255,255,0.05)", color: "#f1f5f9" }}
+                  />
+                </div>
+
+                {/* Local */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">Local</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Providencia"
+                    value={local}
+                    onChange={(e) => setLocal(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl text-sm border focus:outline-none focus:border-sky-500 transition-colors"
                     style={{ background: "#121418", borderColor: "rgba(255,255,255,0.05)", color: "#f1f5f9" }}
                   />

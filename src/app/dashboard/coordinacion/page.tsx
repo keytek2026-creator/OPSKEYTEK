@@ -343,6 +343,25 @@ function CoordinacionContent() {
       if (error) {
         alert(`Error al actualizar: ${error.message}`);
       } else {
+        // Actualizar también en nosotros si existe el registro vinculado
+        try {
+          const nosotrosId = `coord-${editingRow.id}`;
+          const { data: existingNosotros } = await supabase.from("nosotros").select("data").eq("id", nosotrosId).maybeSingle();
+          if (existingNosotros && existingNosotros.data) {
+            await supabase.from("nosotros").update({
+              data: {
+                ...existingNosotros.data,
+                atm: formData.atm ?? existingNosotros.data.atm,
+                banco: formData.banco_empresa ?? existingNosotros.data.banco,
+                local: formData.local ?? existingNosotros.data.local ?? "",
+                servicio: formData.tipo_trabajo ?? existingNosotros.data.servicio
+              }
+            }).eq("id", nosotrosId);
+          }
+        } catch (err) {
+          console.error("Error sincronizando actualización con nosotros:", err);
+        }
+
         setIsModalOpen(false);
         fetchServicios();
       }
@@ -362,6 +381,7 @@ function CoordinacionContent() {
           const payloadNosotros = {
             atm: formData.atm || "",
             banco: formData.banco_empresa || "",
+            local: formData.local || "",
             servicio: formData.tipo_trabajo || "",
             carlos: 0,
             scott: 0,
