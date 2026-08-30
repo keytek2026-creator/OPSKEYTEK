@@ -40,11 +40,14 @@ const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
 
 const TIPO_COLOR = (tipo: string) => {
   const t = tipo?.toLowerCase() || "";
+  if (t.includes("pintura") || t.includes("pintar")) return { bg: "rgba(234,179,8,0.12)", color: "#facc15" };
+  if (t.includes("camara") || t.includes("cámara") || t.includes("cctv") || t.includes("dvr")) return { bg: "rgba(14,165,233,0.12)", color: "#38bdf8" };
+  if (t.includes("cerrajeria") || t.includes("cerrajería") || t.includes("cerrajero") || t.includes("chapa")) return { bg: "rgba(236,72,153,0.12)", color: "#ec4899" };
+  if (t.includes("llave") || t.includes("lave")) return { bg: "rgba(168,85,247,0.12)", color: "#c084fc" };
   if (t.includes("instalacion") || t.includes("anclaje")) return { bg: "rgba(59,130,246,0.12)", color: "#60a5fa" };
   if (t.includes("supervision") || t.includes("supervisión")) return { bg: "rgba(245,158,11,0.12)", color: "#fbbf24" };
   if (t.includes("servicio") || t.includes("mantencion") || t.includes("mantención")) return { bg: "rgba(114,176,29,0.12)", color: "#93c947" };
   if (t.includes("visita")) return { bg: "rgba(139,92,246,0.12)", color: "#a78bfa" };
-  if (t.includes("cerrajeria") || t.includes("cerrajería") || t.includes("cerrajero") || t.includes("chapa")) return { bg: "rgba(236,72,153,0.12)", color: "#ec4899" };
   return { bg: "rgba(100,116,139,0.1)", color: "#94a3b8" };
 };
 
@@ -243,8 +246,14 @@ function CoordinacionContent() {
       let matchTipo = true;
       if (filterTipo !== "all") {
         const rowTipo = (row.tipo_trabajo || "").toLowerCase();
-        if (filterTipo === "CERRAJERIA") {
+        if (filterTipo === "PINTURA") {
+          matchTipo = rowTipo.includes("pintura") || rowTipo.includes("pintar");
+        } else if (filterTipo === "CAMARAS") {
+          matchTipo = rowTipo.includes("camara") || rowTipo.includes("cámara") || rowTipo.includes("cctv") || rowTipo.includes("dvr");
+        } else if (filterTipo === "CERRAJERIA") {
           matchTipo = rowTipo.includes("cerrajeria") || rowTipo.includes("cerrajería") || rowTipo.includes("cerrajero") || rowTipo.includes("chapa");
+        } else if (filterTipo === "LLAVES" || filterTipo === "LAVES") {
+          matchTipo = rowTipo.includes("llave") || rowTipo.includes("lave");
         } else if (filterTipo === "ANCLAJE") {
           matchTipo = rowTipo.includes("anclaje") && !rowTipo.includes("supervision") && !rowTipo.includes("supervisión");
         } else if (filterTipo === "DESANCLAJE") {
@@ -524,9 +533,12 @@ function CoordinacionContent() {
           onChange={(e) => { setFilterTipo(e.target.value); setPage(1); }}
         >
           <option value="all">Todas las categorías</option>
+          <option value="PINTURA">Pintura</option>
+          <option value="CAMARAS">Cámaras</option>
+          <option value="CERRAJERIA">Cerrajería</option>
+          <option value="LLAVES">Llaves</option>
           <option value="ANCLAJE">Anclaje</option>
           <option value="DESANCLAJE">Desanclaje</option>
-          <option value="CERRAJERIA">Cerrajería</option>
           <option value="SUPERVISION">Supervisión</option>
           <option value="MANTENCION">Mantención</option>
           <option value="VISITA">Visitas</option>
@@ -967,6 +979,54 @@ function CoordinacionContent() {
                         </div>
                       )}
                     </div>
+                  ) : f.key === "tipo_trabajo" ? (
+                    <div className="space-y-1.5">
+                      <select
+                        className="ops-select"
+                        value={
+                          ["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"]
+                            .includes((formData.tipo_trabajo || "").toUpperCase())
+                            ? (formData.tipo_trabajo || "").toUpperCase()
+                            : (formData.tipo_trabajo ? "OTRO" : "")
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "OTRO") {
+                            // Dejar en blanco si venía de una estándar para que escriba
+                            if (["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"].includes((formData.tipo_trabajo || "").toUpperCase())) {
+                              setFormData({ ...formData, tipo_trabajo: "" });
+                            }
+                          } else {
+                            setFormData({ ...formData, tipo_trabajo: val });
+                          }
+                        }}
+                      >
+                        <option value="">Selecciona categoría...</option>
+                        <optgroup label="Categorías Principales">
+                          <option value="PINTURA">Pintura</option>
+                          <option value="CAMARAS">Cámaras</option>
+                          <option value="CERRAJERIA">Cerrajería</option>
+                          <option value="LLAVES">Llaves</option>
+                        </optgroup>
+                        <optgroup label="Otras Categorías">
+                          <option value="ANCLAJE">Anclaje</option>
+                          <option value="DESANCLAJE">Desanclaje</option>
+                          <option value="SUPERVISION">Supervisión</option>
+                          <option value="MANTENCION">Mantención</option>
+                          <option value="VISITA">Visita Técnica</option>
+                          <option value="SERVICIO ELECTRICO">Servicio Eléctrico</option>
+                          <option value="OTRO">Otro (Escribir personalizada...)</option>
+                        </optgroup>
+                      </select>
+                      {(!["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"].includes((formData.tipo_trabajo || "").toUpperCase()) || (formData.tipo_trabajo === "" && formData.tipo_trabajo !== undefined)) && (
+                        <input
+                          className="ops-input text-xs"
+                          placeholder="Escribe categoría personalizada..."
+                          value={formData.tipo_trabajo || ""}
+                          onChange={(e) => setFormData({ ...formData, tipo_trabajo: e.target.value.toUpperCase() })}
+                        />
+                      )}
+                    </div>
                   ) : f.key === "informe" ? (
                     <select
                       className="ops-select"
@@ -985,7 +1045,7 @@ function CoordinacionContent() {
                       value={formData[f.key as keyof ProgramacionRow] || ""}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setFormData({ ...formData, [f.key]: f.key === "tipo_trabajo" ? val.toUpperCase() : val });
+                        setFormData({ ...formData, [f.key]: val });
                       }}
                     />
                   )}
