@@ -562,11 +562,36 @@ export default function CotizacionesPage() {
 
   async function loadData() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("cotizaciones")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setCotizaciones(data.map(r => ({ ...r.data, id: r.id, createdAt: r.created_at })));
+    try {
+      const { data, error } = await supabase
+        .from("cotizaciones")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) {
+        setCotizaciones(data.map(r => {
+          const d = r.data || {};
+          return {
+            id: r.id,
+            numero: d.numero ?? "",
+            fecha: d.fecha ?? "",
+            cliente: d.cliente ?? "",
+            rut: d.rut ?? "",
+            atencion: d.atencion ?? "",
+            emailContacto: d.emailContacto ?? "",
+            descripcionServicio: d.descripcionServicio ?? "",
+            direccion: d.direccion ?? "",
+            items: Array.isArray(d.items) ? d.items : [],
+            validacion: d.validacion ?? "5 días",
+            plazoEntrega: d.plazoEntrega ?? "3 días",
+            nota: d.nota ?? "",
+            estado: d.estado ?? "borrador",
+            createdAt: d.createdAt ?? r.created_at ?? "",
+          };
+        }));
+      }
+    } catch (e) {
+      console.error("Error loading cotizaciones:", e);
+    }
     setLoading(false);
   }
 
