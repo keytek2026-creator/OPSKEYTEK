@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import {
-  Search, Calendar, Clock, MapPin, User, Building2, FileText,
+  Search, Calendar, Clock, MapPin, User, Building2, FileText, Tag,
   Hash, ChevronLeft, ChevronRight, X, Plus, Save, Check, Pencil, Trash2, Download
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +15,7 @@ interface ProgramacionRow {
   fecha: string | null;
   hora_inicio: string | null;
   hora_termino: string | null;
+  categoria?: string | null;
   tipo_trabajo: string | null;
   local: string | null;
   direccion: string | null;
@@ -299,7 +300,8 @@ function CoordinacionContent() {
         "Fecha": r.fecha || "",
         "Hora Inicio": r.hora_inicio || "",
         "Hora Termino": r.hora_termino || "",
-        "Categoría": r.tipo_trabajo || "",
+        "Categoría": r.categoria || r.tipo_trabajo || "",
+        "Tipo de Trabajo": r.tipo_trabajo || "",
         "Local": r.local || "",
         "Direccion": r.direccion || "",
         "Comuna": r.comuna || "",
@@ -342,12 +344,23 @@ function CoordinacionContent() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    const savePayload: any = { ...formData };
+    if (savePayload.categoria) savePayload.categoria = String(savePayload.categoria).trim().toUpperCase();
+    if (savePayload.tipo_trabajo) savePayload.tipo_trabajo = String(savePayload.tipo_trabajo).trim().toUpperCase();
+
     if (editingRow) {
       // Editar
-      const { error } = await supabase
+      let { error } = await supabase
         .from("servicios")
-        .update(formData)
+        .update(savePayload)
         .eq("id", editingRow.id);
+      
+      if (error && error.code === "42703") {
+        const fallback = { ...savePayload };
+        delete fallback.categoria;
+        const res = await supabase.from("servicios").update(fallback).eq("id", editingRow.id);
+        error = res.error;
+      }
       
       if (error) {
         alert(`Error al actualizar: ${error.message}`);
@@ -363,7 +376,7 @@ function CoordinacionContent() {
                 atm: formData.atm ?? existingNosotros.data.atm,
                 banco: formData.banco_empresa ?? existingNosotros.data.banco,
                 local: formData.local ?? existingNosotros.data.local ?? "",
-                servicio: formData.tipo_trabajo ?? existingNosotros.data.servicio
+                servicio: (formData.categoria || formData.tipo_trabajo) ?? existingNosotros.data.servicio
               }
             }).eq("id", nosotrosId);
           }
@@ -376,10 +389,18 @@ function CoordinacionContent() {
       }
     } else {
       // Crear nuevo
-      const { data: newRows, error } = await supabase
+      let { data: newRows, error } = await supabase
         .from("servicios")
-        .insert([formData])
+        .insert([savePayload])
         .select();
+      
+      if (error && error.code === "42703") {
+        const fallback = { ...savePayload };
+        delete fallback.categoria;
+        const res = await supabase.from("servicios").insert([fallback]).select();
+        newRows = res.data;
+        error = res.error;
+      }
       
       if (error) {
         alert(`Error al crear: ${error.message}`);
@@ -391,7 +412,7 @@ function CoordinacionContent() {
             atm: formData.atm || "",
             banco: formData.banco_empresa || "",
             local: formData.local || "",
-            servicio: formData.tipo_trabajo || "",
+            servicio: formData.categoria || formData.tipo_trabajo || "",
             carlos: 0,
             scott: 0,
             ricardo: 0,
@@ -445,7 +466,8 @@ function CoordinacionContent() {
     { key: "fecha", label: "Fecha (DD-MM-YYYY)" },
     { key: "hora_inicio", label: "Hora Inicio" },
     { key: "hora_termino", label: "Hora Término" },
-    { key: "tipo_trabajo", label: "Categoría" },
+    { key: "categoria", label: "Categoría" },
+    { key: "tipo_trabajo", label: "Tipo de Trabajo" },
     { key: "local", label: "Local" },
     { key: "direccion", label: "Dirección" },
     { key: "comuna", label: "Comuna" },
@@ -582,7 +604,8 @@ function CoordinacionContent() {
                     { label: "Fecha", icon: Calendar },
                     { label: "Hora Inicio", icon: Clock },
                     { label: "Hora Término", icon: Clock },
-                    { label: "Categoría", icon: FileText },
+                    { label: "Categoría", icon: Tag },
+                    { label: "Tipo de Trabajo", icon: FileText },
                     { label: "Local", icon: MapPin },
                     { label: "Dirección", icon: MapPin },
                     { label: "Comuna", icon: MapPin },
@@ -624,19 +647,19 @@ function CoordinacionContent() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={14} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
+                  <td colSpan={15} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
                     Conectando con Supabase...
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={14} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
+                  <td colSpan={15} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
                     No se encontraron registros
                   </td>
                 </tr>
               ) : (
                 paginated.map((row) => {
-                  const tipoBadge = TIPO_COLOR(row.tipo_trabajo || "");
+                  const tipoBadge = TIPO_COLOR(row.categoria || row.tipo_trabajo || "");
                   const informeBadge = BADGE_COLORS[row.informe?.toUpperCase() || ""] || BADGE_COLORS[""];
 
                   return (
@@ -674,8 +697,8 @@ function CoordinacionContent() {
                           {row.hora_termino || "—"}
                         </div>
                       </td>
-                      {/* Tipo */}
-                      <td style={{ padding: "10px 14px", maxWidth: 220 }}>
+                      {/* Categoría */}
+                      <td style={{ padding: "10px 14px", maxWidth: 160 }}>
                         <span style={{
                           display: "inline-block",
                           padding: "2px 8px",
@@ -685,12 +708,15 @@ function CoordinacionContent() {
                           background: tipoBadge.bg,
                           color: tipoBadge.color,
                           whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          maxWidth: 210,
                         }}>
-                          {row.tipo_trabajo || "—"}
+                          {row.categoria || row.tipo_trabajo || "—"}
                         </span>
+                      </td>
+                      {/* Tipo de Trabajo */}
+                      <td style={{ padding: "10px 14px", maxWidth: 220 }}>
+                        <div style={{ color: "#e2e8f0", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.tipo_trabajo || ""}>
+                          {row.tipo_trabajo || "—"}
+                        </div>
                       </td>
                       {/* Local */}
                       <td style={{ padding: "10px 14px", maxWidth: 180 }}>
@@ -973,24 +999,24 @@ function CoordinacionContent() {
                         </div>
                       )}
                     </div>
-                  ) : f.key === "tipo_trabajo" ? (
+                  ) : f.key === "categoria" ? (
                     <div className="space-y-1.5">
                       <select
                         className="ops-select"
                         value={
                           ["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"]
-                            .includes((formData.tipo_trabajo || "").toUpperCase())
-                            ? (formData.tipo_trabajo || "").toUpperCase()
-                            : (formData.tipo_trabajo ? "OTRO" : "")
+                            .includes((formData.categoria || "").toUpperCase())
+                            ? (formData.categoria || "").toUpperCase()
+                            : (formData.categoria ? "OTRO" : "")
                         }
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === "OTRO") {
-                            if (["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.tipo_trabajo || "").toUpperCase())) {
-                              setFormData({ ...formData, tipo_trabajo: "" });
+                            if (["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.categoria || "").toUpperCase())) {
+                              setFormData({ ...formData, categoria: "" });
                             }
                           } else {
-                            setFormData({ ...formData, tipo_trabajo: val });
+                            setFormData({ ...formData, categoria: val });
                           }
                         }}
                       >
@@ -1001,15 +1027,22 @@ function CoordinacionContent() {
                         <option value="LLAVES">Llaves</option>
                         <option value="OTRO">Otro (Personalizado...)</option>
                       </select>
-                      {(!["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.tipo_trabajo || "").toUpperCase()) || (formData.tipo_trabajo === "" && formData.tipo_trabajo !== undefined)) && (
+                      {(!["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.categoria || "").toUpperCase()) && formData.categoria !== undefined && formData.categoria !== "") && (
                         <input
                           className="ops-input text-xs"
                           placeholder="Escribe categoría personalizada..."
-                          value={formData.tipo_trabajo || ""}
-                          onChange={(e) => setFormData({ ...formData, tipo_trabajo: e.target.value.toUpperCase() })}
+                          value={formData.categoria || ""}
+                          onChange={(e) => setFormData({ ...formData, categoria: e.target.value.toUpperCase() })}
                         />
                       )}
                     </div>
+                  ) : f.key === "tipo_trabajo" ? (
+                    <input
+                      className="ops-input"
+                      placeholder="Ej: Cambio de cerradura, pintura de muro..."
+                      value={formData.tipo_trabajo || ""}
+                      onChange={(e) => setFormData({ ...formData, tipo_trabajo: e.target.value.toUpperCase() })}
+                    />
                   ) : f.key === "informe" ? (
                     <select
                       className="ops-select"
