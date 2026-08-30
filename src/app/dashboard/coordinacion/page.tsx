@@ -537,12 +537,6 @@ function CoordinacionContent() {
           <option value="CAMARAS">Cámaras</option>
           <option value="CERRAJERIA">Cerrajería</option>
           <option value="LLAVES">Llaves</option>
-          <option value="ANCLAJE">Anclaje</option>
-          <option value="DESANCLAJE">Desanclaje</option>
-          <option value="SUPERVISION">Supervisión</option>
-          <option value="MANTENCION">Mantención</option>
-          <option value="VISITA">Visitas</option>
-          <option value="SERVICIO ELECTRICO">Eléctrico</option>
         </select>
 
         {/* Date filters */}
@@ -984,7 +978,7 @@ function CoordinacionContent() {
                       <select
                         className="ops-select"
                         value={
-                          ["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"]
+                          ["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"]
                             .includes((formData.tipo_trabajo || "").toUpperCase())
                             ? (formData.tipo_trabajo || "").toUpperCase()
                             : (formData.tipo_trabajo ? "OTRO" : "")
@@ -992,8 +986,7 @@ function CoordinacionContent() {
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === "OTRO") {
-                            // Dejar en blanco si venía de una estándar para que escriba
-                            if (["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"].includes((formData.tipo_trabajo || "").toUpperCase())) {
+                            if (["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.tipo_trabajo || "").toUpperCase())) {
                               setFormData({ ...formData, tipo_trabajo: "" });
                             }
                           } else {
@@ -1002,23 +995,13 @@ function CoordinacionContent() {
                         }}
                       >
                         <option value="">Selecciona categoría...</option>
-                        <optgroup label="Categorías Principales">
-                          <option value="PINTURA">Pintura</option>
-                          <option value="CAMARAS">Cámaras</option>
-                          <option value="CERRAJERIA">Cerrajería</option>
-                          <option value="LLAVES">Llaves</option>
-                        </optgroup>
-                        <optgroup label="Otras Categorías">
-                          <option value="ANCLAJE">Anclaje</option>
-                          <option value="DESANCLAJE">Desanclaje</option>
-                          <option value="SUPERVISION">Supervisión</option>
-                          <option value="MANTENCION">Mantención</option>
-                          <option value="VISITA">Visita Técnica</option>
-                          <option value="SERVICIO ELECTRICO">Servicio Eléctrico</option>
-                          <option value="OTRO">Otro (Escribir personalizada...)</option>
-                        </optgroup>
+                        <option value="PINTURA">Pintura</option>
+                        <option value="CAMARAS">Cámaras</option>
+                        <option value="CERRAJERIA">Cerrajería</option>
+                        <option value="LLAVES">Llaves</option>
+                        <option value="OTRO">Otro (Personalizado...)</option>
                       </select>
-                      {(!["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES", "ANCLAJE", "DESANCLAJE", "SUPERVISION", "MANTENCION", "VISITA", "SERVICIO ELECTRICO"].includes((formData.tipo_trabajo || "").toUpperCase()) || (formData.tipo_trabajo === "" && formData.tipo_trabajo !== undefined)) && (
+                      {(!["PINTURA", "CAMARAS", "CERRAJERIA", "LLAVES"].includes((formData.tipo_trabajo || "").toUpperCase()) || (formData.tipo_trabajo === "" && formData.tipo_trabajo !== undefined)) && (
                         <input
                           className="ops-input text-xs"
                           placeholder="Escribe categoría personalizada..."
