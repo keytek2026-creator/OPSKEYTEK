@@ -348,6 +348,9 @@ function CoordinacionContent() {
     if (savePayload.categoria) savePayload.categoria = String(savePayload.categoria).trim().toUpperCase();
     if (savePayload.tipo_trabajo) savePayload.tipo_trabajo = String(savePayload.tipo_trabajo).trim().toUpperCase();
 
+    const isMissingCategoriaError = (err: any) =>
+      err && (err.code === "42703" || err.code === "PGRST204" || (err.message && err.message.includes("categoria")));
+
     if (editingRow) {
       // Editar
       let { error } = await supabase
@@ -355,7 +358,7 @@ function CoordinacionContent() {
         .update(savePayload)
         .eq("id", editingRow.id);
       
-      if (error && error.code === "42703") {
+      if (isMissingCategoriaError(error)) {
         const fallback = { ...savePayload };
         delete fallback.categoria;
         const res = await supabase.from("servicios").update(fallback).eq("id", editingRow.id);
@@ -394,7 +397,7 @@ function CoordinacionContent() {
         .insert([savePayload])
         .select();
       
-      if (error && error.code === "42703") {
+      if (isMissingCategoriaError(error)) {
         const fallback = { ...savePayload };
         delete fallback.categoria;
         const res = await supabase.from("servicios").insert([fallback]).select();
