@@ -35,6 +35,7 @@ export default function NosotrosPage() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterMes, setFilterMes] = useState("todos");
+  const [filterAnio, setFilterAnio] = useState("todos");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<NosotrosRecord | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -277,33 +278,34 @@ export default function NosotrosPage() {
     return "$ " + n.toLocaleString("es-CL");
   };
 
-  // Parsea fecha en formato DD-MM-YYYY o YYYY-MM-DD y retorna "YYYY-MM" para filtrar por mes
-  const getMesKey = (fecha: string | undefined): string => {
-    if (!fecha) return "";
-    // Formato DD-MM-YYYY
-    const ddmmyyyy = fecha.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if (ddmmyyyy) return `${ddmmyyyy[3]}-${ddmmyyyy[2]}`;
-    // Formato YYYY-MM-DD
-    const yyyymmdd = fecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (yyyymmdd) return `${yyyymmdd[1]}-${yyyymmdd[2]}`;
-    return "";
-  };
-
-  // Meses disponibles para el filtro (solo los que tienen datos)
-  const mesesDisponibles = Array.from(
-    new Set(records.map(r => getMesKey(r.fecha)).filter(Boolean))
-  ).sort().reverse();
-
   const MESES_ES: Record<string, string> = {
     "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
     "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
     "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
   };
 
-  const formatMesLabel = (mesKey: string) => {
-    const [anio, mes] = mesKey.split("-");
-    return `${MESES_ES[mes] || mes} ${anio}`;
+  const TODOS_LOS_MESES = Object.entries(MESES_ES).map(([num, nombre]) => ({
+    value: num,
+    label: nombre
+  }));
+
+  // Parsea fecha en formato DD-MM-YYYY o YYYY-MM-DD
+  const parseFecha = (fecha: string | undefined): { anio: string; mes: string } => {
+    if (!fecha) return { anio: "", mes: "" };
+    const ddmmyyyy = fecha.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (ddmmyyyy) return { anio: ddmmyyyy[3], mes: ddmmyyyy[2] };
+    const yyyymmdd = fecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (yyyymmdd) return { anio: yyyymmdd[1], mes: yyyymmdd[2] };
+    return { anio: "", mes: "" };
   };
+
+  // Años disponibles (dinámicos desde los datos) más años futuros hasta 2030
+  const aniosConDatos = Array.from(
+    new Set(records.map(r => parseFecha(r.fecha).anio).filter(Boolean))
+  );
+  const anioActual = new Date().getFullYear();
+  const aniosExtras = Array.from({ length: 5 }, (_, i) => String(anioActual + i));
+  const aniosDisponibles = Array.from(new Set([...aniosConDatos, ...aniosExtras])).sort().reverse();
 
   const filteredRecords = records.filter(r => {
     const matchSearch =
@@ -311,8 +313,10 @@ export default function NosotrosPage() {
       r.atm.toLowerCase().includes(search.toLowerCase()) ||
       (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
       r.servicio.toLowerCase().includes(search.toLowerCase());
-    const matchMes = filterMes === "todos" || getMesKey(r.fecha) === filterMes;
-    return matchSearch && matchMes;
+    const { anio, mes } = parseFecha(r.fecha);
+    const matchAnio = filterAnio === "todos" || anio === filterAnio;
+    const matchMes = filterMes === "todos" || mes === filterMes;
+    return matchSearch && matchAnio && matchMes;
   });
 
   // Totales de la tabla visible
@@ -437,6 +441,36 @@ export default function NosotrosPage() {
           />
         </div>
 
+        {/* Filtro por Año */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider whitespace-nowrap">📆 Año:</span>
+          <select
+            value={filterAnio}
+            onChange={(e) => { setFilterAnio(e.target.value); }}
+            className="px-3 py-2 rounded-xl text-sm border focus:outline-none transition-all"
+            style={{
+              background: "#1b1e24",
+              borderColor: filterAnio !== "todos" ? "rgba(99,179,237,0.5)" : "rgba(255,255,255,0.05)",
+              color: filterAnio !== "todos" ? "#90cdf4" : "#e2e8f0",
+              fontWeight: filterAnio !== "todos" ? 700 : 400,
+            }}
+          >
+            <option value="todos">Todos los años</option>
+            {aniosDisponibles.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          {filterAnio !== "todos" && (
+            <button
+              onClick={() => setFilterAnio("todos")}
+              className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+              title="Limpiar año"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {/* Filtro por Mes */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider whitespace-nowrap">📅 Mes:</span>
@@ -452,15 +486,15 @@ export default function NosotrosPage() {
             }}
           >
             <option value="todos">Todos los meses</option>
-            {mesesDisponibles.map(m => (
-              <option key={m} value={m}>{formatMesLabel(m)}</option>
+            {TODOS_LOS_MESES.map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
           {filterMes !== "todos" && (
             <button
               onClick={() => setFilterMes("todos")}
               className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-              title="Limpiar filtro"
+              title="Limpiar mes"
             >
               <X size={14} />
             </button>
