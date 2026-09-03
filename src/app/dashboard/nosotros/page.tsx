@@ -14,6 +14,7 @@ interface NosotrosRecord {
   local?: string;
   servicio: string;
   fecha?: string;
+  numero_cotizacion?: string;
   carlos: number;
   scott: number;
   ricardo: number;
@@ -45,6 +46,7 @@ export default function NosotrosPage() {
   const [banco, setBanco] = useState("");
   const [local, setLocal] = useState("");
   const [servicio, setServicio] = useState("Cerrajería");
+  const [numeroCotizacion, setNumeroCotizacion] = useState("");
   const [carlos, setCarlos] = useState(0);
   const [scott, setScott] = useState(0);
   const [ricardo, setRicardo] = useState(0);
@@ -61,7 +63,7 @@ export default function NosotrosPage() {
           .order("created_at", { ascending: true }),
         supabase
           .from("servicios")
-          .select("id, local, atm, banco_empresa, fecha")
+          .select("id, local, atm, banco_empresa, fecha, numero_cotizacion")
       ]);
 
       const { data, error } = nosotrosRes;
@@ -82,12 +84,16 @@ export default function NosotrosPage() {
         const atmMap = new Map<string, string>();
         const fechaCoordMap = new Map<string, string>();
         const fechaAtmMap = new Map<string, string>();
+        const cotiCoordMap = new Map<string, string>();
+        const cotiAtmMap = new Map<string, string>();
 
         serviciosList.forEach((s: any) => {
           if (s.id && s.local) coordMap.set(`coord-${s.id}`, s.local);
           if (s.atm && s.local) atmMap.set(String(s.atm).trim().toLowerCase(), s.local);
           if (s.id && s.fecha) fechaCoordMap.set(`coord-${s.id}`, s.fecha);
           if (s.atm && s.fecha) fechaAtmMap.set(String(s.atm).trim().toLowerCase(), s.fecha);
+          if (s.id && s.numero_cotizacion) cotiCoordMap.set(`coord-${s.id}`, s.numero_cotizacion);
+          if (s.atm && s.numero_cotizacion) cotiAtmMap.set(String(s.atm).trim().toLowerCase(), s.numero_cotizacion);
         });
 
         const mapped: NosotrosRecord[] = data.map((r: any) => {
@@ -108,6 +114,15 @@ export default function NosotrosPage() {
               fechaVal = fechaAtmMap.get(String(r.data.atm).trim().toLowerCase()) || "";
             }
           }
+          // N° Cotización desde servicios o local
+          let cotiVal = r.data.numero_cotizacion ?? "";
+          if (!cotiVal) {
+            if (cotiCoordMap.has(r.id)) {
+              cotiVal = cotiCoordMap.get(r.id) || "";
+            } else if (r.data.atm && cotiAtmMap.has(String(r.data.atm).trim().toLowerCase())) {
+              cotiVal = cotiAtmMap.get(String(r.data.atm).trim().toLowerCase()) || "";
+            }
+          }
           return {
             id: r.id,
             atm: r.data.atm ?? "",
@@ -115,6 +130,7 @@ export default function NosotrosPage() {
             local: localVal,
             servicio: r.data.servicio ?? "",
             fecha: fechaVal,
+            numero_cotizacion: cotiVal,
             carlos: Number(r.data.carlos ?? 0),
             scott: Number(r.data.scott ?? 0),
             ricardo: Number(r.data.ricardo ?? 0),
@@ -165,6 +181,7 @@ export default function NosotrosPage() {
     setBanco("");
     setLocal("");
     setServicio("Cerrajería");
+    setNumeroCotizacion("");
     setCarlos(0);
     setScott(0);
     setRicardo(0);
@@ -178,6 +195,7 @@ export default function NosotrosPage() {
     setBanco(rec.banco);
     setLocal(rec.local || "");
     setServicio(rec.servicio);
+    setNumeroCotizacion(rec.numero_cotizacion || "");
     setCarlos(rec.carlos);
     setScott(rec.scott);
     setRicardo(rec.ricardo);
@@ -194,6 +212,7 @@ export default function NosotrosPage() {
       banco,
       local,
       servicio,
+      numero_cotizacion: numeroCotizacion,
       carlos: Number(carlos),
       scott: Number(scott),
       ricardo: Number(ricardo),
@@ -304,6 +323,7 @@ export default function NosotrosPage() {
       r.banco.toLowerCase().includes(search.toLowerCase()) ||
       r.atm.toLowerCase().includes(search.toLowerCase()) ||
       (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.numero_cotizacion || "").toLowerCase().includes(search.toLowerCase()) ||
       r.servicio.toLowerCase().includes(search.toLowerCase());
     const { anio, mes } = parseFecha(r.fecha);
     const matchAnio = filterAnio === "todos" || anio === filterAnio;
@@ -543,6 +563,7 @@ export default function NosotrosPage() {
               <thead>
                 <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">N° Cotización</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ATM</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Banco</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Local</th>
@@ -558,7 +579,7 @@ export default function NosotrosPage() {
               <tbody>
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-6 py-12 text-center text-slate-500 text-sm">
+                    <td colSpan={12} className="px-6 py-12 text-center text-slate-500 text-sm">
                       No se encontraron registros que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -569,6 +590,7 @@ export default function NosotrosPage() {
                     return (
                       <tr key={r.id} className="hover:bg-white/[0.01] transition-colors border-b border-slate-800/40">
                         <td className="px-6 py-3.5 text-sm text-slate-400 whitespace-nowrap font-mono">{r.fecha || "—"}</td>
+                        <td className="px-6 py-3.5 text-sm text-sky-400 whitespace-nowrap font-mono font-semibold">{r.numero_cotizacion || "—"}</td>
                         <td className="px-6 py-3.5 text-sm font-semibold text-slate-200">{r.atm}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.banco}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.local || "-"}</td>
@@ -620,7 +642,7 @@ export default function NosotrosPage() {
                 {filteredRecords.length > 0 && (
                   <>
                     <tr style={{ background: "rgba(255,255,255,0.03)" }} className="font-bold border-t-2 border-slate-700">
-                      <td colSpan={5} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
+                      <td colSpan={6} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
                         TOTALES (COMPLETADOS)
                       </td>
                       <td className="px-6 py-3 text-sm text-right text-sky-400 font-mono">{fmtCLP(filteredCompletedCarlos)}</td>
@@ -636,7 +658,7 @@ export default function NosotrosPage() {
                     {hasPendingFiltered && (
                       <>
                         <tr style={{ background: "rgba(245,158,11,0.03)" }} className="font-semibold text-xs border-t border-slate-800">
-                          <td colSpan={5} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
+                          <td colSpan={6} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
                             TOTALES (PENDIENTES)
                           </td>
                           <td className="px-6 py-2.5 text-sm text-right text-amber-300/80 font-mono">{fmtCLP(filteredPendingCarlos)}</td>
@@ -649,7 +671,7 @@ export default function NosotrosPage() {
                         </tr>
 
                         <tr style={{ background: "rgba(255,255,255,0.05)" }} className="font-bold border-t border-slate-700">
-                          <td colSpan={5} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
+                          <td colSpan={6} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
                             GRAN TOTAL (TODOS LOS REGISTROS)
                           </td>
                           <td className="px-6 py-3 text-sm text-right text-slate-200 font-mono">{fmtCLP(filteredCompletedCarlos + filteredPendingCarlos)}</td>
@@ -687,7 +709,7 @@ export default function NosotrosPage() {
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {/* ATM */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">ID ATM</label>
@@ -699,6 +721,19 @@ export default function NosotrosPage() {
                     onChange={(e) => setAtm(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl text-sm border focus:outline-none focus:border-sky-500 transition-colors"
                     style={{ background: "#121418", borderColor: "rgba(255,255,255,0.05)", color: "#f1f5f9" }}
+                  />
+                </div>
+
+                {/* N° Cotización */}
+                <div>
+                  <label className="block text-xs font-bold text-sky-400 mb-1.5 uppercase">N° Cotización</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: COT-001"
+                    value={numeroCotizacion}
+                    onChange={(e) => setNumeroCotizacion(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl text-sm border focus:outline-none focus:border-sky-500 transition-colors font-mono"
+                    style={{ background: "#121418", borderColor: "rgba(56,189,248,0.2)", color: "#38bdf8" }}
                   />
                 </div>
 
