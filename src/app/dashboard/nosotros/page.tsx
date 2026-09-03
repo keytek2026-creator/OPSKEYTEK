@@ -13,6 +13,7 @@ interface NosotrosRecord {
   banco: string;
   local?: string;
   servicio: string;
+  fecha?: string;
   carlos: number;
   scott: number;
   ricardo: number;
@@ -33,6 +34,7 @@ export default function NosotrosPage() {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filterMes, setFilterMes] = useState("todos");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<NosotrosRecord | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export default function NosotrosPage() {
           .order("created_at", { ascending: true }),
         supabase
           .from("servicios")
-          .select("id, local, atm, banco_empresa")
+          .select("id, local, atm, banco_empresa, fecha")
       ]);
 
       const { data, error } = nosotrosRes;
@@ -77,10 +79,14 @@ export default function NosotrosPage() {
         const serviciosList = serviciosRes.data || [];
         const coordMap = new Map<string, string>();
         const atmMap = new Map<string, string>();
+        const fechaCoordMap = new Map<string, string>();
+        const fechaAtmMap = new Map<string, string>();
 
         serviciosList.forEach((s: any) => {
           if (s.id && s.local) coordMap.set(`coord-${s.id}`, s.local);
           if (s.atm && s.local) atmMap.set(String(s.atm).trim().toLowerCase(), s.local);
+          if (s.id && s.fecha) fechaCoordMap.set(`coord-${s.id}`, s.fecha);
+          if (s.atm && s.fecha) fechaAtmMap.set(String(s.atm).trim().toLowerCase(), s.fecha);
         });
 
         const mapped: NosotrosRecord[] = data.map((r: any) => {
@@ -92,12 +98,22 @@ export default function NosotrosPage() {
               localVal = atmMap.get(String(r.data.atm).trim().toLowerCase()) || "";
             }
           }
+          // Fecha desde servicios
+          let fechaVal = r.data.fecha ?? "";
+          if (!fechaVal) {
+            if (fechaCoordMap.has(r.id)) {
+              fechaVal = fechaCoordMap.get(r.id) || "";
+            } else if (r.data.atm && fechaAtmMap.has(String(r.data.atm).trim().toLowerCase())) {
+              fechaVal = fechaAtmMap.get(String(r.data.atm).trim().toLowerCase()) || "";
+            }
+          }
           return {
             id: r.id,
             atm: r.data.atm ?? "",
             banco: r.data.banco ?? "",
             local: localVal,
             servicio: r.data.servicio ?? "",
+            fecha: fechaVal,
             carlos: Number(r.data.carlos ?? 0),
             scott: Number(r.data.scott ?? 0),
             ricardo: Number(r.data.ricardo ?? 0),
@@ -261,12 +277,43 @@ export default function NosotrosPage() {
     return "$ " + n.toLocaleString("es-CL");
   };
 
-  const filteredRecords = records.filter(r => 
-    r.banco.toLowerCase().includes(search.toLowerCase()) ||
-    r.atm.toLowerCase().includes(search.toLowerCase()) ||
-    (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
-    r.servicio.toLowerCase().includes(search.toLowerCase())
-  );
+  // Parsea fecha en formato DD-MM-YYYY o YYYY-MM-DD y retorna "YYYY-MM" para filtrar por mes
+  const getMesKey = (fecha: string | undefined): string => {
+    if (!fecha) return "";
+    // Formato DD-MM-YYYY
+    const ddmmyyyy = fecha.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (ddmmyyyy) return `${ddmmyyyy[3]}-${ddmmyyyy[2]}`;
+    // Formato YYYY-MM-DD
+    const yyyymmdd = fecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (yyyymmdd) return `${yyyymmdd[1]}-${yyyymmdd[2]}`;
+    return "";
+  };
+
+  // Meses disponibles para el filtro (solo los que tienen datos)
+  const mesesDisponibles = Array.from(
+    new Set(records.map(r => getMesKey(r.fecha)).filter(Boolean))
+  ).sort().reverse();
+
+  const MESES_ES: Record<string, string> = {
+    "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+    "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+    "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+  };
+
+  const formatMesLabel = (mesKey: string) => {
+    const [anio, mes] = mesKey.split("-");
+    return `${MESES_ES[mes] || mes} ${anio}`;
+  };
+
+  const filteredRecords = records.filter(r => {
+    const matchSearch =
+      r.banco.toLowerCase().includes(search.toLowerCase()) ||
+      r.atm.toLowerCase().includes(search.toLowerCase()) ||
+      (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
+      r.servicio.toLowerCase().includes(search.toLowerCase());
+    const matchMes = filterMes === "todos" || getMesKey(r.fecha) === filterMes;
+    return matchSearch && matchMes;
+  });
 
   // Totales de la tabla visible
   const filteredCompletedCarlos = filteredRecords.reduce((sum, r) => isCompletado(r.status) ? sum + Number(r.carlos || 0) : sum, 0);
@@ -390,6 +437,36 @@ export default function NosotrosPage() {
           />
         </div>
 
+        {/* Filtro por Mes */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider whitespace-nowrap">📅 Mes:</span>
+          <select
+            value={filterMes}
+            onChange={(e) => setFilterMes(e.target.value)}
+            className="px-3 py-2 rounded-xl text-sm border focus:outline-none transition-all"
+            style={{
+              background: "#1b1e24",
+              borderColor: filterMes !== "todos" ? "rgba(114,176,29,0.5)" : "rgba(255,255,255,0.05)",
+              color: filterMes !== "todos" ? "#93c947" : "#e2e8f0",
+              fontWeight: filterMes !== "todos" ? 700 : 400,
+            }}
+          >
+            <option value="todos">Todos los meses</option>
+            {mesesDisponibles.map(m => (
+              <option key={m} value={m}>{formatMesLabel(m)}</option>
+            ))}
+          </select>
+          {filterMes !== "todos" && (
+            <button
+              onClick={() => setFilterMes("todos")}
+              className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+              title="Limpiar filtro"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         {/* Botón Nuevo Registro */}
         <button
           onClick={openNewModal}
@@ -413,6 +490,7 @@ export default function NosotrosPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ATM</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Banco</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Local</th>
@@ -428,7 +506,7 @@ export default function NosotrosPage() {
               <tbody>
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-12 text-center text-slate-500 text-sm">
+                    <td colSpan={11} className="px-6 py-12 text-center text-slate-500 text-sm">
                       No se encontraron registros que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -438,6 +516,7 @@ export default function NosotrosPage() {
                     const completado = isCompletado(r.status);
                     return (
                       <tr key={r.id} className="hover:bg-white/[0.01] transition-colors border-b border-slate-800/40">
+                        <td className="px-6 py-3.5 text-sm text-slate-400 whitespace-nowrap font-mono">{r.fecha || "—"}</td>
                         <td className="px-6 py-3.5 text-sm font-semibold text-slate-200">{r.atm}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.banco}</td>
                         <td className="px-6 py-3.5 text-sm text-slate-300 font-medium">{r.local || "-"}</td>
@@ -489,7 +568,7 @@ export default function NosotrosPage() {
                 {filteredRecords.length > 0 && (
                   <>
                     <tr style={{ background: "rgba(255,255,255,0.03)" }} className="font-bold border-t-2 border-slate-700">
-                      <td colSpan={4} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
+                      <td colSpan={5} className="px-6 py-3 text-xs font-extrabold text-emerald-400 uppercase tracking-wider text-left">
                         TOTALES (COMPLETADOS)
                       </td>
                       <td className="px-6 py-3 text-sm text-right text-sky-400 font-mono">{fmtCLP(filteredCompletedCarlos)}</td>
@@ -505,7 +584,7 @@ export default function NosotrosPage() {
                     {hasPendingFiltered && (
                       <>
                         <tr style={{ background: "rgba(245,158,11,0.03)" }} className="font-semibold text-xs border-t border-slate-800">
-                          <td colSpan={4} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
+                          <td colSpan={5} className="px-6 py-2.5 text-xs font-bold text-amber-400 uppercase tracking-wider text-left">
                             TOTALES (PENDIENTES)
                           </td>
                           <td className="px-6 py-2.5 text-sm text-right text-amber-300/80 font-mono">{fmtCLP(filteredPendingCarlos)}</td>
@@ -518,7 +597,7 @@ export default function NosotrosPage() {
                         </tr>
 
                         <tr style={{ background: "rgba(255,255,255,0.05)" }} className="font-bold border-t border-slate-700">
-                          <td colSpan={4} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
+                          <td colSpan={5} className="px-6 py-3 text-xs font-extrabold text-white uppercase tracking-wider text-left">
                             GRAN TOTAL (TODOS LOS REGISTROS)
                           </td>
                           <td className="px-6 py-3 text-sm text-right text-slate-200 font-mono">{fmtCLP(filteredCompletedCarlos + filteredPendingCarlos)}</td>
