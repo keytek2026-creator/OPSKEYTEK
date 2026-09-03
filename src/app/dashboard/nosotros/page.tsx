@@ -314,10 +314,9 @@ export default function NosotrosPage() {
       (r.local || "").toLowerCase().includes(search.toLowerCase()) ||
       r.servicio.toLowerCase().includes(search.toLowerCase());
     const { anio, mes } = parseFecha(r.fecha);
-    // Filtros independientes: solo uno activo a la vez
-    if (filterAnio !== "todos") return matchSearch && anio === filterAnio;
-    if (filterMes !== "todos") return matchSearch && mes === filterMes;
-    return matchSearch;
+    const matchAnio = filterAnio === "todos" || anio === filterAnio;
+    const matchMes = filterMes === "todos" || mes === filterMes;
+    return matchSearch && matchAnio && matchMes;
   });
 
   // Totales de la tabla visible
@@ -447,7 +446,7 @@ export default function NosotrosPage() {
           <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider whitespace-nowrap">📆 Año:</span>
           <select
             value={filterAnio}
-            onChange={(e) => { setFilterAnio(e.target.value); setFilterMes("todos"); }}
+            onChange={(e) => setFilterAnio(e.target.value)}
             className="px-3 py-2 rounded-xl text-sm border focus:outline-none transition-all"
             style={{
               background: "#1b1e24",
@@ -477,7 +476,7 @@ export default function NosotrosPage() {
           <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider whitespace-nowrap">📅 Mes:</span>
           <select
             value={filterMes}
-            onChange={(e) => { setFilterMes(e.target.value); setFilterAnio("todos"); }}
+            onChange={(e) => setFilterMes(e.target.value)}
             className="px-3 py-2 rounded-xl text-sm border focus:outline-none transition-all"
             style={{
               background: "#1b1e24",
