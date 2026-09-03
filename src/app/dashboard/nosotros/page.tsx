@@ -264,15 +264,7 @@ export default function NosotrosPage() {
     }
   };
 
-  // Acumulados monetarios globales (solo completados)
-  const totalCarlos = records.reduce((sum, r) => isCompletado(r.status) ? sum + Number(r.carlos || 0) : sum, 0);
-  const totalScott = records.reduce((sum, r) => isCompletado(r.status) ? sum + Number(r.scott || 0) : sum, 0);
-  const totalRicardo = records.reduce((sum, r) => isCompletado(r.status) ? sum + Number(r.ricardo || 0) : sum, 0);
-
-  // Pendientes globales
-  const pendingCarlos = records.reduce((sum, r) => !isCompletado(r.status) ? sum + Number(r.carlos || 0) : sum, 0);
-  const pendingScott = records.reduce((sum, r) => !isCompletado(r.status) ? sum + Number(r.scott || 0) : sum, 0);
-  const pendingRicardo = records.reduce((sum, r) => !isCompletado(r.status) ? sum + Number(r.ricardo || 0) : sum, 0);
+  // NOTA: totalCarlos/Scott/Ricardo se calculan DESPUÉS de filteredRecords (más abajo)
 
   const fmtCLP = (n: number) => {
     return "$ " + n.toLocaleString("es-CL");
@@ -330,6 +322,26 @@ export default function NosotrosPage() {
 
   const hasPendingFiltered = (filteredPendingCarlos + filteredPendingScott + filteredPendingRicardo) > 0;
 
+  // Totales de las tarjetas = basados en filteredRecords (responden al filtro activo)
+  const totalCarlos = filteredCompletedCarlos;
+  const totalScott = filteredCompletedScott;
+  const totalRicardo = filteredCompletedRicardo;
+  const pendingCarlos = filteredPendingCarlos;
+  const pendingScott = filteredPendingScott;
+  const pendingRicardo = filteredPendingRicardo;
+
+  // Etiqueta del filtro activo para mostrar en las tarjetas
+  const MESES_ES_LABEL: Record<string, string> = {
+    "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+    "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+    "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+  };
+  const filtroLabel = filterAnio !== "todos" && filterMes !== "todos"
+    ? `${MESES_ES_LABEL[filterMes] || filterMes} ${filterAnio}`
+    : filterAnio !== "todos" ? filterAnio
+    : filterMes !== "todos" ? MESES_ES_LABEL[filterMes] || filterMes
+    : null;
+
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6 text-slate-100" style={{ background: "#121418" }}>
       
@@ -356,7 +368,9 @@ export default function NosotrosPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <div className="text-xs font-extrabold text-sky-400 tracking-wider uppercase">Acumulado Carlos</div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 font-bold border border-sky-500/20">Completados</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 font-bold border border-sky-500/20">
+                {filtroLabel ? filtroLabel : "Completados"}
+              </span>
             </div>
             <div className="text-3xl font-extrabold tracking-tight text-white">{fmtCLP(totalCarlos)}</div>
             {pendingCarlos > 0 && (
@@ -380,7 +394,9 @@ export default function NosotrosPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <div className="text-xs font-extrabold text-emerald-400 tracking-wider uppercase">Acumulado Scott</div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20">Completados</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20">
+                {filtroLabel ? filtroLabel : "Completados"}
+              </span>
             </div>
             <div className="text-3xl font-extrabold tracking-tight text-white">{fmtCLP(totalScott)}</div>
             {pendingScott > 0 && (
@@ -404,7 +420,9 @@ export default function NosotrosPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <div className="text-xs font-extrabold text-indigo-400 tracking-wider uppercase">Acumulado Ricardo</div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 font-bold border border-indigo-500/20">Completados</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 font-bold border border-indigo-500/20">
+                {filtroLabel ? filtroLabel : "Completados"}
+              </span>
             </div>
             <div className="text-3xl font-extrabold tracking-tight text-white">{fmtCLP(totalRicardo)}</div>
             {pendingRicardo > 0 && (
