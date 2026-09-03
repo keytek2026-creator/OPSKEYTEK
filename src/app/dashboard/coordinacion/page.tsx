@@ -27,6 +27,7 @@ interface ProgramacionRow {
   banco_empresa: string | null;
   informe: string | null;
   ot: string | null;
+  numero_cotizacion?: string | null;
   precio_pinares?: string | null;
 }
 
@@ -226,7 +227,7 @@ function CoordinacionContent() {
       const matchSearch =
         !q ||
         [row.fecha, row.tipo_trabajo, row.local, row.direccion, row.atm, row.comuna,
-          row.asignado_a, row.nombre_solicitante, row.banco_empresa, row.ot]
+          row.asignado_a, row.nombre_solicitante, row.banco_empresa, row.ot, row.numero_cotizacion]
           .some((f) => (f || "").toLowerCase().includes(q));
       const matchBanco = filterBanco === "all" || row.banco_empresa === filterBanco;
       const matchInf = filterInforme === "all" || row.informe === filterInforme;
@@ -297,6 +298,7 @@ function CoordinacionContent() {
     const rows = filtered.map(r => {
       const rowData: any = {
         "OT": r.ot || "",
+        "N° Cotización": r.numero_cotizacion || "",
         "Fecha": r.fecha || "",
         "Hora Inicio": r.hora_inicio || "",
         "Hora Termino": r.hora_termino || "",
@@ -347,9 +349,10 @@ function CoordinacionContent() {
     const savePayload: any = { ...formData };
     if (savePayload.categoria) savePayload.categoria = String(savePayload.categoria).trim().toUpperCase();
     if (savePayload.tipo_trabajo) savePayload.tipo_trabajo = String(savePayload.tipo_trabajo).trim().toUpperCase();
+    if (savePayload.numero_cotizacion) savePayload.numero_cotizacion = String(savePayload.numero_cotizacion).trim();
 
-    const isMissingCategoriaError = (err: any) =>
-      err && (err.code === "42703" || err.code === "PGRST204" || (err.message && err.message.includes("categoria")));
+    const isMissingColumnError = (err: any) =>
+      err && (err.code === "42703" || err.code === "PGRST204" || (err.message && (err.message.includes("categoria") || err.message.includes("numero_cotizacion"))));
 
     if (editingRow) {
       // Editar
@@ -358,9 +361,16 @@ function CoordinacionContent() {
         .update(savePayload)
         .eq("id", editingRow.id);
       
-      if (isMissingCategoriaError(error)) {
+      if (isMissingColumnError(error)) {
         const fallback = { ...savePayload };
-        delete fallback.categoria;
+        if (error?.message?.includes("numero_cotizacion")) {
+          delete fallback.numero_cotizacion;
+        } else if (error?.message?.includes("categoria")) {
+          delete fallback.categoria;
+        } else {
+          delete fallback.numero_cotizacion;
+          delete fallback.categoria;
+        }
         const res = await supabase.from("servicios").update(fallback).eq("id", editingRow.id);
         error = res.error;
       }
@@ -397,9 +407,16 @@ function CoordinacionContent() {
         .insert([savePayload])
         .select();
       
-      if (isMissingCategoriaError(error)) {
+      if (isMissingColumnError(error)) {
         const fallback = { ...savePayload };
-        delete fallback.categoria;
+        if (error?.message?.includes("numero_cotizacion")) {
+          delete fallback.numero_cotizacion;
+        } else if (error?.message?.includes("categoria")) {
+          delete fallback.categoria;
+        } else {
+          delete fallback.numero_cotizacion;
+          delete fallback.categoria;
+        }
         const res = await supabase.from("servicios").insert([fallback]).select();
         newRows = res.data;
         error = res.error;
@@ -466,6 +483,7 @@ function CoordinacionContent() {
   // Mapeo de campos para el formulario
   const formFields = [
     { key: "ot", label: "OT" },
+    { key: "numero_cotizacion", label: "N° Cotización" },
     { key: "fecha", label: "Fecha (DD-MM-YYYY)" },
     { key: "hora_inicio", label: "Hora Inicio" },
     { key: "hora_termino", label: "Hora Término" },
@@ -604,6 +622,7 @@ function CoordinacionContent() {
                 {(() => {
                   const headers = [
                     { label: "OT", icon: Hash },
+                    { label: "N° Cotización", icon: FileText },
                     { label: "Fecha", icon: Calendar },
                     { label: "Hora Inicio", icon: Clock },
                     { label: "Hora Término", icon: Clock },
@@ -650,13 +669,13 @@ function CoordinacionContent() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={15} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
+                  <td colSpan={16} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
                     Conectando con Supabase...
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={15} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
+                  <td colSpan={16} style={{ textAlign: "center", padding: 40, color: "#475569" }}>
                     No se encontraron registros
                   </td>
                 </tr>
@@ -682,6 +701,12 @@ function CoordinacionContent() {
                       <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
                         <span style={{ fontWeight: 700, color: "#72b01d", fontSize: 12 }}>
                           {row.ot || "—"}
+                        </span>
+                      </td>
+                      {/* N° Cotización */}
+                      <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
+                        <span style={{ fontWeight: 600, color: "#38bdf8", fontSize: 12, fontFamily: "monospace" }}>
+                          {row.numero_cotizacion || "—"}
                         </span>
                       </td>
                       {/* Fecha */}
