@@ -34,10 +34,15 @@ const getReportFileName = (report: any, ext: 'docx' | 'pdf') => {
   const destinatario = sanitize(report.destinatario || report.clientName || "");
   const ot = sanitize(report.otNumber ? `informe OT ${report.otNumber}` : "informe OT");
   const ubicacion = sanitize(report.ubicacionRef || report.local || report.direccion || "");
-  const atm = sanitize(report.numeroATM || report.atm || "");
+  
+  let rawAtm = sanitize(report.numeroATM || report.atm || "");
+  let atm = "";
+  if (rawAtm) {
+    atm = /^atm\b/i.test(rawAtm) ? rawAtm : `ATM ${rawAtm}`;
+  }
 
   const parts = [destinatario, ot, ubicacion, atm].filter(Boolean);
-  const baseName = parts.length > 0 ? parts.join(" - ") : `informe OT ${report.otNumber || "nuevo"}`;
+  const baseName = parts.length > 0 ? parts.join(" ") : `informe OT ${report.otNumber || "nuevo"}`;
   return `${baseName}.${ext}`;
 };
 

@@ -279,9 +279,15 @@ export async function POST(request: NextRequest) {
     const destinatario = sanitize(informe.destinatario || "");
     const ot = sanitize(informe.numeroOT ? `informe OT ${informe.numeroOT}` : "informe OT");
     const ubicacion = sanitize(informe.ubicacion || informe.direccion || informe.comuna || "");
-    const atm = sanitize(informe.numeroATM || "");
+    
+    let rawAtm = sanitize(informe.numeroATM || "");
+    let atm = "";
+    if (rawAtm) {
+      atm = /^atm\b/i.test(rawAtm) ? rawAtm : `ATM ${rawAtm}`;
+    }
+
     const parts = [destinatario, ot, ubicacion, atm].filter(Boolean);
-    const fileName = `${parts.length > 0 ? parts.join(" - ") : `informe OT ${informe.numeroOT || "nuevo"}`}.pdf`;
+    const fileName = `${parts.length > 0 ? parts.join(" ") : `informe OT ${informe.numeroOT || "nuevo"}`}.pdf`;
 
     return new Response(new Uint8Array(pdfBuffer), {
       status: 200,
