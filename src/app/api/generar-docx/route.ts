@@ -32,14 +32,20 @@ export async function POST(request: NextRequest) {
     const buffer = await generarDocx(informe);
     const uint8 = new Uint8Array(buffer);
 
-    const fileName = `Informe-OT-${informe.numeroATM || 'nuevo'}.docx`;
+    const sanitize = (str: string) => (str || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+    const destinatario = sanitize(informe.destinatario || "");
+    const ot = sanitize(informe.numeroOT ? `informe OT ${informe.numeroOT}` : "informe OT");
+    const ubicacion = sanitize(informe.ubicacion || informe.direccion || informe.comuna || "");
+    const atm = sanitize(informe.numeroATM || "");
+    const parts = [destinatario, ot, ubicacion, atm].filter(Boolean);
+    const fileName = `${parts.length > 0 ? parts.join(" - ") : `informe OT ${informe.numeroOT || "nuevo"}`}.docx`;
 
     return new Response(uint8, {
       status: 200,
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
         'Content-Length': uint8.byteLength.toString(),
       },
     });

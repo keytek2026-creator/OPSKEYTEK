@@ -275,13 +275,19 @@ export async function POST(request: NextRequest) {
     const pdfDoc = pdfmake.createPdf(docDefinition);
     const pdfBuffer: Buffer = await pdfDoc.getBuffer();
 
-    const fileName = `Informe_OT_${informe.numeroOT || 'nuevo'}.pdf`;
+    const sanitize = (str: string) => (str || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+    const destinatario = sanitize(informe.destinatario || "");
+    const ot = sanitize(informe.numeroOT ? `informe OT ${informe.numeroOT}` : "informe OT");
+    const ubicacion = sanitize(informe.ubicacion || informe.direccion || informe.comuna || "");
+    const atm = sanitize(informe.numeroATM || "");
+    const parts = [destinatario, ot, ubicacion, atm].filter(Boolean);
+    const fileName = `${parts.length > 0 ? parts.join(" - ") : `informe OT ${informe.numeroOT || "nuevo"}`}.pdf`;
 
     return new Response(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
         'Content-Length': pdfBuffer.byteLength.toString(),
       },
     });

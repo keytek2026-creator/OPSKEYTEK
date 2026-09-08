@@ -28,8 +28,21 @@ const formatDateForWord = (dateString?: string) => {
   }
 };
 
+const getReportFileName = (report: any, ext: 'docx' | 'pdf') => {
+  const sanitize = (str: string) => (str || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+  
+  const destinatario = sanitize(report.destinatario || report.clientName || "");
+  const ot = sanitize(report.otNumber ? `informe OT ${report.otNumber}` : "informe OT");
+  const ubicacion = sanitize(report.ubicacionRef || report.local || report.direccion || "");
+  const atm = sanitize(report.numeroATM || report.atm || "");
+
+  const parts = [destinatario, ot, ubicacion, atm].filter(Boolean);
+  const baseName = parts.length > 0 ? parts.join(" - ") : `informe OT ${report.otNumber || "nuevo"}`;
+  return `${baseName}.${ext}`;
+};
+
 const downloadReportAsWord = async (report: any) => {
-  const filename = `Informe_OT_${report.otNumber || "10895"}.docx`;
+  const filename = getReportFileName(report, 'docx');
   
   const mappedInforme = {
     numeroOT: report.otNumber || "",
@@ -83,6 +96,8 @@ const downloadReportAsWord = async (report: any) => {
 };
 
 const downloadReportAsPdf = async (report: any) => {
+  const filename = getReportFileName(report, 'pdf');
+
   const formatFechaHtml = (dateString?: string) => {
     if (!dateString) return "";
     try {
@@ -149,7 +164,7 @@ const downloadReportAsPdf = async (report: any) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Informe_OT_${report.otNumber || "10895"}.pdf`;
+    a.download = filename;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
