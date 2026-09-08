@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import {
   Search, Calendar, Clock, MapPin, User, Building2, FileText, Tag,
-  Hash, ChevronLeft, ChevronRight, X, Plus, Save, Check, Pencil, Trash2, Download
+  Hash, ChevronLeft, ChevronRight, X, Plus, Save, Check, Pencil, Trash2, Download, Copy
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Technician } from "@/types";
@@ -341,6 +341,14 @@ function CoordinacionContent() {
   const handleOpenEdit = (row: ProgramacionRow) => {
     setEditingRow(row);
     setFormData(row);
+    setIsModalOpen(true);
+  };
+
+  const handleDuplicate = (e: React.MouseEvent, row: ProgramacionRow) => {
+    e.stopPropagation();
+    setEditingRow(null); // Es un nuevo registro
+    const { id, ...rest } = row;
+    setFormData({ ...rest });
     setIsModalOpen(true);
   };
 
@@ -836,6 +844,25 @@ function CoordinacionContent() {
                             <Pencil size={12} /> Editar
                           </button>
                           <button
+                            onClick={(e) => handleDuplicate(e, row)}
+                            style={{
+                              background: "rgba(56,189,248,0.1)",
+                              color: "#38bdf8",
+                              border: "1px solid rgba(56,189,248,0.25)",
+                              borderRadius: "6px",
+                              padding: "4px 8px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                            }}
+                            title="Duplicar este servicio para crear uno nuevo con los mismos datos"
+                          >
+                            <Copy size={12} /> Duplicar
+                          </button>
+                          <button
                             onClick={(e) => handleDelete(e, row.id)}
                             style={{
                               background: "rgba(239,68,68,0.1)",
@@ -950,10 +977,10 @@ function CoordinacionContent() {
             <div className="flex items-center justify-between p-5 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               <div>
                 <div style={{ color: "#f1f5f9", fontSize: 16, fontWeight: 700 }}>
-                  {editingRow ? `Editar Coordinación #${editingRow.ot || editingRow.id}` : "Nueva Coordinación"}
+                  {editingRow ? `Editar Coordinación #${editingRow.ot || editingRow.id}` : formData.atm ? `Duplicar Coordinación (ATM ${formData.atm})` : "Nueva Coordinación"}
                 </div>
                 <div style={{ color: "#475569", fontSize: 12, marginTop: 2 }}>
-                  {editingRow ? "Modifica los campos del registro seleccionado." : "Ingresa los datos para el nuevo registro."}
+                  {editingRow ? "Modifica los campos del registro seleccionado." : formData.atm ? "Revisa o ajusta los datos copiados y haz clic en Guardar para crear el nuevo servicio." : "Ingresa los datos para el nuevo registro."}
                 </div>
               </div>
               <button onClick={() => setIsModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#475569" }}>
