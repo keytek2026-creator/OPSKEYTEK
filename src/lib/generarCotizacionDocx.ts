@@ -443,12 +443,24 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
     ],
   });
 
-  // ── DIRECCIÓN Y NOTA ────────────────────────────────────────────────────────
+  // ── DIRECCIÓN, SERVICIO Y NOTA ─────────────────────────────────────────────
   const extraParagraphs: Paragraph[] = [];
-  if (cot.direccion) {
+  if (cot.descripcionServicio) {
     extraParagraphs.push(
       new Paragraph({
         spacing: { before: 240, after: 60 },
+        children: [
+          new TextRun({ text: 'Descripción del Servicio: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
+          new TextRun({ text: cot.descripcionServicio, size: 20, color: '5A5A5A', font: 'Calibri' }),
+        ],
+      })
+    );
+  }
+
+  if (cot.direccion) {
+    extraParagraphs.push(
+      new Paragraph({
+        spacing: { before: cot.descripcionServicio ? 60 : 240, after: 60 },
         children: [
           new TextRun({ text: 'Dirección: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
           new TextRun({ text: cot.direccion, size: 20, color: '5A5A5A', font: 'Calibri' }),
@@ -458,7 +470,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
   }
 
   const notaParagraph = new Paragraph({
-    spacing: { before: cot.direccion ? 60 : 280, after: 120 },
+    spacing: { before: (cot.descripcionServicio || cot.direccion) ? 60 : 280, after: 120 },
     children: [
       new TextRun({ text: 'Nota: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
       new TextRun({ text: cot.nota || `La cotización es válida por ${diasVal} días.`, size: 20, color: '5A5A5A', font: 'Calibri' }),

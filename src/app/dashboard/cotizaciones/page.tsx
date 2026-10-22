@@ -303,6 +303,16 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                     </div>
                   </div>
 
+                  {/* DESCRIPCIÓN DEL SERVICIO */}
+                  {cot.descripcionServicio && (
+                    <div style={{ marginBottom:'2mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>Descripci&oacute;n del Servicio: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A' }}>
+                        {cot.descripcionServicio}
+                      </span>
+                    </div>
+                  )}
+
                   {/* DIRECCIÓN */}
                   {cot.direccion && (
                     <div style={{ marginBottom:'2mm' }}>
