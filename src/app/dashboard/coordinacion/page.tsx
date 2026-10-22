@@ -248,26 +248,30 @@ function CoordinacionContent() {
       let matchTipo = true;
       if (filterTipo !== "all") {
         const rowTipo = (row.tipo_trabajo || "").toLowerCase();
+        const rowCat = (row.categoria || "").toLowerCase();
+        const textToMatch = `${rowCat} ${rowTipo}`;
         if (filterTipo === "PINTURA") {
-          matchTipo = rowTipo.includes("pintura") || rowTipo.includes("pintar");
+          matchTipo = textToMatch.includes("pintura") || textToMatch.includes("pintar");
         } else if (filterTipo === "CAMARAS") {
-          matchTipo = rowTipo.includes("camara") || rowTipo.includes("cámara") || rowTipo.includes("cctv") || rowTipo.includes("dvr");
+          matchTipo = textToMatch.includes("camara") || textToMatch.includes("cámara") || textToMatch.includes("cctv") || textToMatch.includes("dvr");
         } else if (filterTipo === "CERRAJERIA") {
-          matchTipo = rowTipo.includes("cerrajeria") || rowTipo.includes("cerrajería") || rowTipo.includes("cerrajero") || rowTipo.includes("chapa");
+          matchTipo = textToMatch.includes("cerrajeria") || textToMatch.includes("cerrajería") || textToMatch.includes("cerrajero") || textToMatch.includes("chapa");
         } else if (filterTipo === "LLAVES" || filterTipo === "LAVES") {
-          matchTipo = rowTipo.includes("llave") || rowTipo.includes("lave");
+          matchTipo = textToMatch.includes("llave") || textToMatch.includes("lave");
         } else if (filterTipo === "ANCLAJE") {
-          matchTipo = rowTipo.includes("anclaje") && !rowTipo.includes("supervision") && !rowTipo.includes("supervisión");
+          matchTipo = textToMatch.includes("anclaje") && !textToMatch.includes("supervision") && !textToMatch.includes("supervisión");
         } else if (filterTipo === "DESANCLAJE") {
-          matchTipo = rowTipo.includes("desanclaje");
+          matchTipo = textToMatch.includes("desanclaje");
         } else if (filterTipo === "SUPERVISION") {
-          matchTipo = rowTipo.includes("supervision") || rowTipo.includes("supervisión") || rowTipo.includes("supervicion");
+          matchTipo = textToMatch.includes("supervision") || textToMatch.includes("supervisión") || textToMatch.includes("supervicion");
         } else if (filterTipo === "MANTENCION") {
-          matchTipo = rowTipo.includes("mantencion") || rowTipo.includes("mantención") || rowTipo.includes("servicio");
+          matchTipo = textToMatch.includes("mantencion") || textToMatch.includes("mantención") || textToMatch.includes("servicio");
         } else if (filterTipo === "VISITA") {
-          matchTipo = rowTipo.includes("visita");
+          matchTipo = textToMatch.includes("visita");
         } else if (filterTipo === "SERVICIO ELECTRICO") {
-          matchTipo = rowTipo.includes("electrico") || rowTipo.includes("eléctrico");
+          matchTipo = textToMatch.includes("electrico") || textToMatch.includes("eléctrico");
+        } else {
+          matchTipo = textToMatch.includes(filterTipo.toLowerCase());
         }
       }
       return matchSearch && matchBanco && matchInf && matchDate && matchTipo;
