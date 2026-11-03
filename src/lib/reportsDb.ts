@@ -19,7 +19,7 @@ export async function getReportsDB(): Promise<TechnicalReport[]> {
     .from(TABLE_NAME)
     .select('id, created_at, data')
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(500);
 
   if (error) {
     console.error("Error fetching reports from Supabase:", error);

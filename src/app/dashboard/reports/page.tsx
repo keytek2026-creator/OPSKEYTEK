@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
   FileText, Plus, Download, Send, Eye, X, ClipboardList, MapPin,
   Monitor, Cpu, User, Calendar, ImageIcon, Save, FileOutput,
-  CheckCircle2, Trash2, Clock, Edit,
+  CheckCircle2, Trash2, Clock, Edit, Search,
 } from "lucide-react";
 import { mockWorkOrders } from "@/lib/mock-data";
 import { formatDateTime, formatDate } from "@/lib/utils";
@@ -827,6 +827,7 @@ export default function ReportsPage() {
   const [confirmDelete, setConfirmDelete] = useState<TechnicalReport | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const loadReports = async () => {
@@ -950,6 +951,23 @@ export default function ReportsPage() {
     (o) => o.status === "finalizada" && !reports.find((r) => r.workOrderId === o.id)
   );
 
+  const filteredReports = reports.filter((r) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (r.otNumber || "").toLowerCase().includes(q) ||
+      (r.numeroATM || "").toLowerCase().includes(q) ||
+      (r.clientName || "").toLowerCase().includes(q) ||
+      (r.destinatario || "").toLowerCase().includes(q) ||
+      (r.technicianName || "").toLowerCase().includes(q) ||
+      (r.direccion || "").toLowerCase().includes(q) ||
+      (r.ubicacionRef || "").toLowerCase().includes(q) ||
+      (r.comuna || "").toLowerCase().includes(q) ||
+      (r.modeloMMBB || "").toLowerCase().includes(q) ||
+      (r.diagnosis || "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -987,11 +1005,45 @@ export default function ReportsPage() {
         ))}
       </div>
 
-
+      {/* Search Bar */}
+      <div className="glass-card p-4 flex flex-col sm:flex-row gap-3 items-center">
+        <div className="relative flex-1 w-full">
+          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por OT, N° de cajero (ATM), cliente, técnico, ubicación..."
+            className="ops-input pl-9 w-full text-sm"
+          />
+        </div>
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg cursor-pointer transition-colors"
+            style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}
+          >
+            <X size={12} /> Limpiar
+          </button>
+        )}
+        <div className="text-xs px-3 py-2 rounded-lg font-semibold shrink-0" style={{ background: "rgba(114,176,29,0.1)", color: "#72b01d", border: "1px solid rgba(114,176,29,0.2)" }}>
+          {filteredReports.length} {filteredReports.length === 1 ? "resultado" : "resultados"}
+        </div>
+      </div>
 
       {/* Reports list */}
       <div className="space-y-3">
-        {reports.map((r) => (
+        {filteredReports.length === 0 ? (
+          <div className="glass-card p-12 text-center">
+            <FileText size={32} className="mx-auto mb-3 opacity-30 text-slate-400" />
+            <div className="text-sm font-semibold text-slate-300 mb-1">
+              {search ? "No se encontraron informes para tu búsqueda" : "No hay informes registrados"}
+            </div>
+            <div className="text-xs text-slate-500">
+              {search ? "Prueba ingresando otro número de OT, cajero o nombre." : "Haz clic en 'Nuevo Informe' para crear el primero."}
+            </div>
+          </div>
+        ) : (
+          filteredReports.map((r) => (
           <div key={r.id} className="glass-card p-5">
             <div className="flex flex-col md:flex-row items-start md:justify-between gap-4">
               <div className="flex items-start gap-4 w-full">
@@ -1058,7 +1110,7 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-        ))}
+        )))}
 
 
       </div>
