@@ -43,8 +43,9 @@ export function getCotizacionFileName(cot: any, ext?: string): string {
     atmPart = /^atm\b/i.test(rawAtm) ? rawAtm.toUpperCase() : `ATM ${rawAtm}`;
   }
 
-  // 4. Ubicación / Dirección: "SUPERMERCADO BODEGA ACUENTA PAINE"
-  let ubicacion = sanitizeFileName(cot.direccion || cot.ubicacion || "");
+  // 4. Local / Ubicación: "SUPERMERCADO BODEGA ACUENTA PAINE"
+  // Prioridad absoluta al LOCAL: cot.local > cot.ubicacion > cot.direccion
+  let ubicacion = sanitizeFileName(cot.local || cot.ubicacion || cot.direccion || "");
 
   // Si la ubicación ya contiene el ATM (ej: "SUPERMERCADO BODEGA ACUENTA PAINE ATM 6400"), no duplicar
   if (atmPart && ubicacion.toUpperCase().includes(atmPart.toUpperCase())) {

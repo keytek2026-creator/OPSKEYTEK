@@ -27,6 +27,7 @@ export interface Cotizacion {
   atencion: string;
   emailContacto: string;
   descripcionServicio: string;
+  local?: string;
   direccion: string;
   numeroATM?: string;
   items: LineItem[];
@@ -52,6 +53,7 @@ const EMPTY_COT = (): Omit<Cotizacion, 'id' | 'createdAt'> => ({
   atencion: "",
   emailContacto: "",
   descripcionServicio: "",
+  local: "",
   direccion: "",
   numeroATM: "",
   items: [EMPTY_ITEM()],
@@ -323,6 +325,16 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                     </div>
                   )}
 
+                  {/* LOCAL */}
+                  {cot.local && (
+                    <div style={{ marginBottom:'2mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>Local: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A' }}>
+                        {cot.local}
+                      </span>
+                    </div>
+                  )}
+
                   {/* DIRECCIÓN */}
                   {cot.direccion && (
                     <div style={{ marginBottom:'2mm' }}>
@@ -470,12 +482,16 @@ function CotizacionForm({
               <input style={inputStyle} value={form.emailContacto} onChange={e => set("emailContacto")(e.target.value)} placeholder="email@empresa.cl" />
             </div>
             <div>
-              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>DIRECCIÓN / UBICACIÓN</label>
-              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Supermercado Bodega Acuenta Paine" />
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>LOCAL / SUCURSAL</label>
+              <input style={inputStyle} value={form.local || ""} onChange={e => set("local")(e.target.value)} placeholder="Ej: Supermercado Bodega Acuenta Paine" />
             </div>
             <div>
-              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>N° ATM / CAJERO (OPCIONAL)</label>
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>N° ATM / CAJERO</label>
               <input style={inputStyle} value={form.numeroATM || ""} onChange={e => set("numeroATM")(e.target.value)} placeholder="Ej: 6400" />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>DIRECCIÓN</label>
+              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Av. 18 de Septiembre 450, Paine" />
             </div>
           </div>
 
@@ -613,6 +629,7 @@ export default function CotizacionesPage() {
             atencion: d.atencion ?? "",
             emailContacto: d.emailContacto ?? "",
             descripcionServicio: d.descripcionServicio ?? "",
+            local: d.local ?? "",
             direccion: d.direccion ?? "",
             numeroATM: d.numeroATM ?? "",
             items: Array.isArray(d.items) ? d.items : [],
@@ -663,6 +680,7 @@ export default function CotizacionesPage() {
     const matchSearch = !q || 
       c.numero.toLowerCase().includes(q) || 
       c.cliente.toLowerCase().includes(q) || 
+      (c.local || "").toLowerCase().includes(q) ||
       c.descripcionServicio.toLowerCase().includes(q) ||
       c.direccion.toLowerCase().includes(q) ||
       (c.numeroATM || "").toLowerCase().includes(q);
@@ -769,6 +787,8 @@ export default function CotizacionesPage() {
                       </div>
                       <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>
                         <Building2 size={11} style={{ display: "inline", marginRight: 4 }} />{c.cliente || "Sin cliente"}
+                        {c.local && <> · <span style={{ color: "#cbd5e1" }}>{c.local}</span></>}
+                        {c.numeroATM && <> · <span style={{ color: "#72b01d" }}>ATM {c.numeroATM}</span></>}
                         {c.atencion && <> · <User size={11} style={{ display: "inline", marginRight: 4 }} />{c.atencion}</>}
                       </div>
                       {c.descripcionServicio && (

@@ -40,6 +40,7 @@ interface Cotizacion {
   atencion: string;
   emailContacto: string;
   descripcionServicio: string;
+  local?: string;
   direccion: string;
   numeroATM?: string;
   items: LineItem[];
@@ -458,10 +459,22 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
     );
   }
 
+  if (cot.local) {
+    extraParagraphs.push(
+      new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [
+          new TextRun({ text: 'Local: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
+          new TextRun({ text: cot.local, size: 20, color: '5A5A5A', font: 'Calibri' }),
+        ],
+      })
+    );
+  }
+
   if (cot.direccion) {
     extraParagraphs.push(
       new Paragraph({
-        spacing: { before: cot.descripcionServicio ? 60 : 240, after: 60 },
+        spacing: { before: (cot.descripcionServicio || cot.local) ? 60 : 240, after: 60 },
         children: [
           new TextRun({ text: 'Dirección: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
           new TextRun({ text: cot.direccion, size: 20, color: '5A5A5A', font: 'Calibri' }),
@@ -483,7 +496,7 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
   }
 
   const notaParagraph = new Paragraph({
-    spacing: { before: (cot.descripcionServicio || cot.direccion || cot.numeroATM) ? 60 : 280, after: 120 },
+    spacing: { before: (cot.descripcionServicio || cot.local || cot.direccion || cot.numeroATM) ? 60 : 280, after: 120 },
     children: [
       new TextRun({ text: 'Nota: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
       new TextRun({ text: cot.nota || `La cotización es válida por ${diasVal} días.`, size: 20, color: '5A5A5A', font: 'Calibri' }),
