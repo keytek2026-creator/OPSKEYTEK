@@ -41,6 +41,7 @@ interface Cotizacion {
   emailContacto: string;
   descripcionServicio: string;
   direccion: string;
+  numeroATM?: string;
   items: LineItem[];
   validacion?: string;
   nota: string;
@@ -469,8 +470,20 @@ export async function generarCotizacionDocx(cot: Cotizacion): Promise<Buffer> {
     );
   }
 
+  if (cot.numeroATM) {
+    extraParagraphs.push(
+      new Paragraph({
+        spacing: { before: 60, after: 60 },
+        children: [
+          new TextRun({ text: 'N° ATM / Cajero: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
+          new TextRun({ text: cot.numeroATM, size: 20, color: '5A5A5A', font: 'Calibri' }),
+        ],
+      })
+    );
+  }
+
   const notaParagraph = new Paragraph({
-    spacing: { before: (cot.descripcionServicio || cot.direccion) ? 60 : 280, after: 120 },
+    spacing: { before: (cot.descripcionServicio || cot.direccion || cot.numeroATM) ? 60 : 280, after: 120 },
     children: [
       new TextRun({ text: 'Nota: ', bold: true, size: 20, color: NAVY, font: 'Calibri' }),
       new TextRun({ text: cot.nota || `La cotización es válida por ${diasVal} días.`, size: 20, color: '5A5A5A', font: 'Calibri' }),

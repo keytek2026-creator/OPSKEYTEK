@@ -7,6 +7,7 @@ import {
   User, DollarSign, ArrowRight, Eye, Package, Save
 } from "lucide-react";
 import { downloadCotizacionWord as downloadWord } from "@/lib/downloadCotizacionWord";
+import { getCotizacionFileName } from "@/lib/cotizacionFileName";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ export interface Cotizacion {
   emailContacto: string;
   descripcionServicio: string;
   direccion: string;
+  numeroATM?: string;
   items: LineItem[];
   validacion: string;
   plazoEntrega?: string;
@@ -51,6 +53,7 @@ const EMPTY_COT = (): Omit<Cotizacion, 'id' | 'createdAt'> => ({
   emailContacto: "",
   descripcionServicio: "",
   direccion: "",
+  numeroATM: "",
   items: [EMPTY_ITEM()],
   validacion: "5 días",
   plazoEntrega: "3 días",
@@ -102,7 +105,14 @@ function formatLongDate(dateStr: string) {
 function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
   const { neto, iva, bruto } = calcTotals(cot.items);
   const handleDownloadWord = () => downloadWord(cot);
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const origTitle = document.title;
+    document.title = getCotizacionFileName(cot, "");
+    window.print();
+    setTimeout(() => {
+      document.title = origTitle;
+    }, 1000);
+  };
 
   // Paleta exacta del diseño
   const NAVY        = '#1B2A4F';
@@ -323,6 +333,16 @@ function PrintView({ cot, onClose }: { cot: Cotizacion; onClose: () => void }) {
                     </div>
                   )}
 
+                  {/* N° ATM / CAJERO */}
+                  {cot.numeroATM && (
+                    <div style={{ marginBottom:'2mm' }}>
+                      <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>N° ATM / Cajero: </span>
+                      <span style={{ fontFamily:"'Poppins',sans-serif", fontWeight:400, fontSize:'8.5pt', color:'#5A5A5A' }}>
+                        {cot.numeroATM}
+                      </span>
+                    </div>
+                  )}
+
                   {/* NOTA */}
                   <div>
                     <span style={{ fontFamily:"'Montserrat',sans-serif", fontWeight:700, fontSize:'8.5pt', color:NAVY }}>Nota: </span>
@@ -449,9 +469,13 @@ function CotizacionForm({
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>EMAIL CONTACTO</label>
               <input style={inputStyle} value={form.emailContacto} onChange={e => set("emailContacto")(e.target.value)} placeholder="email@empresa.cl" />
             </div>
-            <div style={{ gridColumn: "span 2" }}>
+            <div>
               <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>DIRECCIÓN / UBICACIÓN</label>
-              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Av. Providencia 1234, Santiago" />
+              <input style={inputStyle} value={form.direccion} onChange={e => set("direccion")(e.target.value)} placeholder="Ej: Supermercado Bodega Acuenta Paine" />
+            </div>
+            <div>
+              <label style={{ color: "#64748b", fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4 }}>N° ATM / CAJERO (OPCIONAL)</label>
+              <input style={inputStyle} value={form.numeroATM || ""} onChange={e => set("numeroATM")(e.target.value)} placeholder="Ej: 6400" />
             </div>
           </div>
 
@@ -590,6 +614,7 @@ export default function CotizacionesPage() {
             emailContacto: d.emailContacto ?? "",
             descripcionServicio: d.descripcionServicio ?? "",
             direccion: d.direccion ?? "",
+            numeroATM: d.numeroATM ?? "",
             items: Array.isArray(d.items) ? d.items : [],
             validacion: d.validacion ?? "5 días",
             plazoEntrega: d.plazoEntrega ?? "3 días",
@@ -635,7 +660,12 @@ export default function CotizacionesPage() {
 
   const filtered = cotizaciones.filter(c => {
     const q = search.toLowerCase();
-    const matchSearch = !q || c.numero.toLowerCase().includes(q) || c.cliente.toLowerCase().includes(q) || c.descripcionServicio.toLowerCase().includes(q);
+    const matchSearch = !q || 
+      c.numero.toLowerCase().includes(q) || 
+      c.cliente.toLowerCase().includes(q) || 
+      c.descripcionServicio.toLowerCase().includes(q) ||
+      c.direccion.toLowerCase().includes(q) ||
+      (c.numeroATM || "").toLowerCase().includes(q);
     const matchEstado = filterEstado === "todos" || c.estado === filterEstado;
     return matchSearch && matchEstado;
   });

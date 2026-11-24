@@ -1,3 +1,5 @@
+import { getCotizacionFileName } from '@/lib/cotizacionFileName';
+
 export async function downloadCotizacionWord(cot: any) {
   try {
     const res = await fetch('/api/generar-cotizacion-docx', {
@@ -10,7 +12,7 @@ export async function downloadCotizacionWord(cot: any) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Cotizacion-${cot.numero || 'nueva'}.docx`;
+    a.download = getCotizacionFileName(cot, 'docx');
     document.body.appendChild(a);
     a.click();
     a.remove();

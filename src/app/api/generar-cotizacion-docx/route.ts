@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { generarCotizacionDocx } from '@/lib/generarCotizacionDocx';
+import { getCotizacionFileName } from '@/lib/cotizacionFileName';
 
 export const runtime = 'nodejs';
 
@@ -18,14 +19,14 @@ export async function POST(request: NextRequest) {
     const buffer = await generarCotizacionDocx(cotizacion);
     const uint8 = new Uint8Array(buffer);
 
-    const fileName = `Cotizacion-${cotizacion.numero || 'nueva'}.docx`;
+    const fileName = getCotizacionFileName(cotizacion, 'docx');
 
     return new Response(uint8, {
       status: 200,
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
         'Content-Length': uint8.byteLength.toString(),
       },
     });
